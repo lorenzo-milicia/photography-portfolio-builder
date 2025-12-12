@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	"image/png"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"golang.org/x/image/draw"
+	"github.com/disintegration/imaging"
+	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/content"
 )
 
 // Processor handles image processing operations
@@ -21,6 +20,235 @@ type Processor struct {
 func NewProcessor(cacheDir string) *Processor {
 	return &Processor{cacheDir: cacheDir}
 }
+
+// OptimizationConfig holds optimization parameters for an image
+type OptimizationConfig struct {
+	MaxWidth      int
+	MaxHeight     int
+	Quality       int
+	StripMetadata bool
+}
+
+// ImageVariants holds information about responsive image variants
+type ImageVariants struct {
+	BaseFilename string
+	Variants     []ImageVariant
+}
+
+// ImageVariant represents a single responsive image variant
+type ImageVariant struct {
+	Filename string
+	Width    int
+}
+
+// ProcessProjectImages processes all images for a project with optimization
+// It strips metadata, renames files sequentially, and generates responsive variants
+func (p *Processor) ProcessProjectImages(sourceDir, destDir string, layout *content.LayoutConfig) (map[string]*ImageVariants, error) {
+	// Map from original filename to responsive variants
+	variantsMap := make(map[string]*ImageVariants)
+
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	// Calculate optimal size for each image based on layout
+	for idx, placement := range layout.Placements {
+		sourcePath := filepath.Join(sourceDir, placement.Filename)
+
+		// Generate base sequential filename: 1, 2, 3, etc.
+		baseFilename := fmt.Sprintf("%d", idx+1)
+
+		// Calculate optimal dimensions based on grid position
+		config := p.calculateOptimalSize(placement)
+
+		// Generate responsive variants for this image
+		variants, err := p.generateResponsiveVariants(sourcePath, destDir, baseFilename, config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate variants for %s: %w", placement.Filename, err)
+		}
+
+		variantsMap[placement.Filename] = variants
+	}
+
+	return variantsMap, nil
+}
+
+// generateResponsiveVariants creates multiple size variants for responsive images
+func (p *Processor) generateResponsiveVariants(sourcePath, destDir, baseFilename string, config OptimizationConfig) (*ImageVariants, error) {
+	// Open source image once
+	img, err := imaging.Open(sourcePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open image: %w", err)
+	}
+
+	bounds := img.Bounds()
+	origWidth := bounds.Dx()
+	origHeight := bounds.Dy()
+	aspectRatio := float64(origWidth) / float64(origHeight)
+
+	// Calculate target widths for responsive variants
+	// Based on the max width, create variants at 0.5x, 0.75x, and 1x
+	maxWidth := config.MaxWidth
+	targetWidths := []int{
+		maxWidth / 2,     // 0.5x for mobile
+		maxWidth * 3 / 4, // 0.75x for tablets
+		maxWidth,         // 1x for desktop
+	}
+
+	// Remove duplicates and ensure we don't exceed original image size
+	uniqueWidths := make(map[int]bool)
+	var finalWidths []int
+	for _, w := range targetWidths {
+		if w > origWidth {
+			w = origWidth
+		}
+		if !uniqueWidths[w] && w >= 320 { // Minimum practical width
+			uniqueWidths[w] = true
+			finalWidths = append(finalWidths, w)
+		}
+	}
+
+	variants := &ImageVariants{
+		BaseFilename: baseFilename,
+		Variants:     make([]ImageVariant, 0, len(finalWidths)),
+	}
+
+	// Generate each variant
+	for _, targetWidth := range finalWidths {
+		targetHeight := int(float64(targetWidth) / aspectRatio)
+
+		// Determine quality based on size
+		quality := p.calculateQuality(targetWidth * targetHeight)
+
+		// Generate filename with width suffix: 1-480w.jpg, 1-800w.jpg, etc.
+		filename := fmt.Sprintf("%s-%dw.jpg", baseFilename, targetWidth)
+		destPath := filepath.Join(destDir, filename)
+
+		// Resize and save
+		resized := imaging.Resize(img, targetWidth, targetHeight, imaging.Lanczos)
+		if err := p.saveOptimizedJPEG(resized, destPath, quality); err != nil {
+			return nil, fmt.Errorf("failed to save variant %s: %w", filename, err)
+		}
+
+		variants.Variants = append(variants.Variants, ImageVariant{
+			Filename: filename,
+			Width:    targetWidth,
+		})
+	}
+
+	return variants, nil
+}
+
+// calculateQuality determines JPEG quality based on total pixels
+func (p *Processor) calculateQuality(totalPixels int) int {
+	if totalPixels > 4000000 { // > 4MP
+		return 85
+	} else if totalPixels > 2000000 { // > 2MP
+		return 87
+	}
+	return 90
+}
+
+// calculateOptimalSize determines optimal image dimensions based on grid placement
+func (p *Processor) calculateOptimalSize(placement content.PhotoPlacement) OptimizationConfig {
+	// Calculate grid cell dimensions
+	colSpan := placement.Position.BottomRightX - placement.Position.TopLeftX + 1
+	rowSpan := placement.Position.BottomRightY - placement.Position.TopLeftY + 1
+
+	// Assume grid width is 12 columns across ~1400px max container
+	// Each column is ~116px, so calculate pixel width
+	const maxContainerWidth = 1400
+	const gridColumns = 12
+	const baseRowHeight = 100 // Base row height in pixels
+
+	pixelWidth := (colSpan * maxContainerWidth) / gridColumns
+	pixelHeight := rowSpan * baseRowHeight
+
+	// Determine target size and quality based on display dimensions
+	// Use 2x for retina/high DPI displays, but cap at reasonable limits
+	maxWidth := pixelWidth * 2
+	maxHeight := pixelHeight * 2
+
+	// Cap at reasonable maximum (4K width)
+	if maxWidth > 3840 {
+		maxWidth = 3840
+	}
+	if maxHeight > 2160 {
+		maxHeight = 2160
+	}
+
+	return OptimizationConfig{
+		MaxWidth:      maxWidth,
+		MaxHeight:     maxHeight,
+		Quality:       90, // Default, will be adjusted per variant
+		StripMetadata: true,
+	}
+}
+
+// optimizeImage processes and optimizes a single image
+func (p *Processor) optimizeImage(sourcePath, destPath string, config OptimizationConfig) error {
+	// Open and decode the source image
+	// The imaging library automatically strips EXIF metadata when encoding
+	img, err := imaging.Open(sourcePath)
+	if err != nil {
+		return fmt.Errorf("failed to open image: %w", err)
+	}
+
+	// Get original dimensions
+	bounds := img.Bounds()
+	origWidth := bounds.Dx()
+	origHeight := bounds.Dy()
+
+	// Calculate aspect ratio
+	aspectRatio := float64(origWidth) / float64(origHeight)
+
+	// Determine final dimensions while maintaining aspect ratio
+	finalWidth := config.MaxWidth
+	finalHeight := config.MaxHeight
+
+	// Fit within both max width and max height constraints
+	if float64(finalWidth)/float64(finalHeight) > aspectRatio {
+		// Height is the limiting factor
+		finalWidth = int(float64(finalHeight) * aspectRatio)
+	} else {
+		// Width is the limiting factor
+		finalHeight = int(float64(finalWidth) / aspectRatio)
+	}
+
+	// Only resize if image is larger than target
+	var processedImg image.Image
+	if origWidth > finalWidth || origHeight > finalHeight {
+		// Use Lanczos resampling for high-quality downscaling
+		processedImg = imaging.Resize(img, finalWidth, finalHeight, imaging.Lanczos)
+	} else {
+		// Image is already smaller than target, use as-is
+		processedImg = img
+	}
+
+	// Save as JPEG with specified quality
+	// This automatically strips all EXIF metadata
+	return p.saveOptimizedJPEG(processedImg, destPath, config.Quality)
+}
+
+// saveOptimizedJPEG saves an image as optimized JPEG
+func (p *Processor) saveOptimizedJPEG(img image.Image, path string, quality int) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	// Encode as JPEG with specified quality
+	// The jpeg.Encode does not preserve EXIF metadata, effectively stripping it
+	options := &jpeg.Options{Quality: quality}
+	if err := jpeg.Encode(file, img, options); err != nil {
+		return fmt.Errorf("failed to encode JPEG: %w", err)
+	}
+
+	return nil
+}
+
+// Legacy functions below for backward compatibility
 
 // ProcessedImage contains information about processed image variants
 type ProcessedImage struct {
@@ -38,22 +266,15 @@ func (p *Processor) ProcessImage(sourcePath, destDir string) (*ProcessedImage, e
 	}
 
 	// Open source image
-	src, err := os.Open(sourcePath)
+	img, err := imaging.Open(sourcePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open source image: %w", err)
-	}
-	defer src.Close()
-
-	// Decode image
-	img, format, err := image.Decode(src)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
 
 	// Get filename without extension
 	filename := filepath.Base(sourcePath)
 	ext := filepath.Ext(filename)
-	nameOnly := strings.TrimSuffix(filename, ext)
+	nameOnly := filename[:len(filename)-len(ext)]
 
 	result := &ProcessedImage{
 		Original:   sourcePath,
@@ -64,7 +285,8 @@ func (p *Processor) ProcessImage(sourcePath, destDir string) (*ProcessedImage, e
 
 	// Generate thumbnail (300px)
 	thumbPath := filepath.Join(destDir, fmt.Sprintf("%s-thumb%s", nameOnly, ext))
-	if err := p.resizeImage(img, thumbPath, 300, format); err != nil {
+	thumb := imaging.Resize(img, 300, 0, imaging.Lanczos)
+	if err := imaging.Save(thumb, thumbPath); err != nil {
 		return nil, fmt.Errorf("failed to create thumbnail: %w", err)
 	}
 	result.Thumbnails[300] = thumbPath
@@ -73,7 +295,8 @@ func (p *Processor) ProcessImage(sourcePath, destDir string) (*ProcessedImage, e
 	sizes := []int{480, 800, 1200}
 	for _, size := range sizes {
 		variantPath := filepath.Join(destDir, fmt.Sprintf("%s-%d%s", nameOnly, size, ext))
-		if err := p.resizeImage(img, variantPath, size, format); err != nil {
+		variant := imaging.Resize(img, size, 0, imaging.Lanczos)
+		if err := imaging.Save(variant, variantPath); err != nil {
 			return nil, fmt.Errorf("failed to create variant %d: %w", size, err)
 		}
 		result.Variants[size] = variantPath
@@ -82,61 +305,13 @@ func (p *Processor) ProcessImage(sourcePath, destDir string) (*ProcessedImage, e
 	return result, nil
 }
 
-// resizeImage resizes an image to the specified max width while maintaining aspect ratio
-func (p *Processor) resizeImage(src image.Image, destPath string, maxWidth int, format string) error {
-	bounds := src.Bounds()
-	srcWidth := bounds.Dx()
-	srcHeight := bounds.Dy()
-
-	// If image is smaller than target, just copy it
-	if srcWidth <= maxWidth {
-		return p.saveImage(src, destPath, format)
-	}
-
-	// Calculate new dimensions maintaining aspect ratio
-	ratio := float64(maxWidth) / float64(srcWidth)
-	newHeight := int(float64(srcHeight) * ratio)
-
-	// Create destination image
-	dst := image.NewRGBA(image.Rect(0, 0, maxWidth, newHeight))
-
-	// Resize using high-quality algorithm
-	draw.CatmullRom.Scale(dst, dst.Bounds(), src, bounds, draw.Over, nil)
-
-	return p.saveImage(dst, destPath, format)
-}
-
-// saveImage saves an image to disk
-func (p *Processor) saveImage(img image.Image, path string, format string) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
-
-	switch format {
-	case "jpeg", "jpg":
-		return jpeg.Encode(file, img, &jpeg.Options{Quality: 90})
-	case "png":
-		return png.Encode(file, img)
-	default:
-		// Default to JPEG
-		return jpeg.Encode(file, img, &jpeg.Options{Quality: 90})
-	}
-}
-
 // GenerateThumbnail creates a single thumbnail of specified size
 func (p *Processor) GenerateThumbnail(sourcePath, destPath string, size int) error {
-	src, err := os.Open(sourcePath)
+	img, err := imaging.Open(sourcePath)
 	if err != nil {
 		return fmt.Errorf("failed to open source image: %w", err)
 	}
-	defer src.Close()
 
-	img, format, err := image.Decode(src)
-	if err != nil {
-		return fmt.Errorf("failed to decode image: %w", err)
-	}
-
-	return p.resizeImage(img, destPath, size, format)
+	thumb := imaging.Resize(img, size, 0, imaging.Lanczos)
+	return imaging.Save(thumb, destPath)
 }

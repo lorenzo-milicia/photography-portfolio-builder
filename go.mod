@@ -3,6 +3,7 @@ module go.lorenzomilicia.dev/photography-portfolio-builder
 go 1.25.4
 
 require (
+	github.com/disintegration/imaging v1.6.2
 	github.com/rs/zerolog v1.34.0
 	golang.org/x/image v0.34.0
 	gopkg.in/yaml.v3 v3.0.1

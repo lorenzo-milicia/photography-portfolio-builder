@@ -35,8 +35,15 @@ type PhotoPlacement struct {
 
 // LayoutConfig holds layout configuration for grid-based composition
 type LayoutConfig struct {
-	GridWidth  int              `yaml:"grid_width" json:"gridWidth"`  // Width of the grid (default: 12)
-	Placements []PhotoPlacement `yaml:"placements" json:"placements"` // Photo positions in the grid
+	GridWidth        int              `yaml:"grid_width" json:"gridWidth"`                                   // Width of the grid (default: 12)
+	Placements       []PhotoPlacement `yaml:"placements" json:"placements"`                                  // Photo positions in the grid
+	MobileGridWidth  int              `yaml:"mobile_grid_width,omitempty" json:"mobileGridWidth,omitempty"`  // Width of mobile grid (optional)
+	MobilePlacements []PhotoPlacement `yaml:"mobile_placements,omitempty" json:"mobilePlacements,omitempty"` // Mobile photo positions (optional)
+}
+
+// HasMobileLayout returns true if a separate mobile layout is configured
+func (lc *LayoutConfig) HasMobileLayout() bool {
+	return lc.MobileGridWidth > 0 && len(lc.MobilePlacements) > 0
 }
 
 // Manager handles content operations

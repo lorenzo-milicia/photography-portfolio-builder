@@ -50,6 +50,36 @@
             background: var(--gray-lightest);
         }
 
+        .view-toggle {
+            display: flex;
+            gap: 0;
+            background: var(--gray-lightest);
+            border-radius: var(--radius-sm);
+            padding: 0.25rem;
+        }
+
+        .view-toggle-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            color: var(--gray);
+        }
+
+        .view-toggle-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .view-toggle-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
         .editor-content {
             display: grid;
             grid-template-columns: 420px 1fr;
@@ -395,6 +425,10 @@
         <div class="header-left">
             <a href="/project/{{.Project.Slug}}" class="back-link">← Back to Project</a>
             <h2 style="margin: 0;">{{.Project.Title}} - Layout Editor</h2>
+            <div class="view-toggle">
+                <button id="desktop-view-btn" class="view-toggle-btn active">🖥️ Desktop</button>
+                <button id="mobile-view-btn" class="view-toggle-btn">📱 Mobile</button>
+            </div>
         </div>
         <div class="header-right">
             <span id="status-indicator" style="color: var(--gray); font-size: 0.875rem;"></span>
@@ -460,6 +494,13 @@
         let gridWidth = parseInt(document.getElementById('grid-width').value);
         let placements = [];
         let selectedIndex = -1;
+        
+        // View mode state
+        let currentView = 'desktop'; // 'desktop' or 'mobile'
+        let desktopGridWidth = {{.Layout.GridWidth}};
+        let mobileGridWidth = {{if .Layout.MobileGridWidth}}{{.Layout.MobileGridWidth}}{{else}}6{{end}};
+        let desktopPlacements = [];
+        let mobilePlacements = [];
 
         // Photo data from server
         const photos = {
@@ -516,6 +557,82 @@
             });
         }
         {{end}}
+
+        // Save desktop placements as initial state
+        desktopPlacements = [...placements];
+
+        // Initialize mobile placements from server
+        {{range .Layout.MobilePlacements}}
+        {
+            const pos = {
+                topLeftX: {{.Position.TopLeftX}},
+                topLeftY: {{.Position.TopLeftY}},
+                bottomRightX: {{.Position.BottomRightX}},
+                bottomRightY: {{.Position.BottomRightY}}
+            };
+            const savedWidth = pos.bottomRightX - pos.topLeftX + 1;
+            const savedHeight = pos.bottomRightY - pos.topLeftY + 1;
+            const photoMeta = photos['{{.Filename}}'];
+            let originalWidth, originalHeight, coefficient;
+            if (photoMeta && photoMeta.ratioWidth && photoMeta.ratioHeight) {
+                originalWidth = photoMeta.ratioWidth;
+                originalHeight = photoMeta.ratioHeight;
+                const coefW = savedWidth / originalWidth;
+                const coefH = savedHeight / originalHeight;
+                coefficient = Math.max(1, Math.round((coefW + coefH) / 2));
+                if (!isFinite(coefficient) || coefficient < 1) coefficient = 1;
+            } else {
+                originalWidth = savedWidth;
+                originalHeight = savedHeight;
+                coefficient = 1;
+            }
+
+            mobilePlacements.push({
+                filename: '{{.Filename}}',
+                originalWidth: originalWidth,
+                originalHeight: originalHeight,
+                coefficient: coefficient,
+                position: pos
+            });
+        }
+        {{end}}
+
+        // If no mobile placements, create a scaled-down version from desktop
+        if (mobilePlacements.length === 0 && desktopPlacements.length > 0) {
+            mobilePlacements = desktopPlacements.map(placement => {
+                const pos = placement.position;
+                
+                // Preserve image size by shifting left if it exceeds mobile grid width
+                const imageWidth = pos.bottomRightX - pos.topLeftX + 1;
+                let newTopLeftX = pos.topLeftX;
+                let newBottomRightX = pos.bottomRightX;
+                
+                // If image extends beyond mobile grid, shift it left
+                if (newBottomRightX > mobileGridWidth) {
+                    const overflow = newBottomRightX - mobileGridWidth;
+                    newTopLeftX = Math.max(1, newTopLeftX - overflow);
+                    newBottomRightX = newTopLeftX + imageWidth - 1;
+                    
+                    // If still too wide, cap at mobile grid width
+                    if (newBottomRightX > mobileGridWidth) {
+                        newBottomRightX = mobileGridWidth;
+                    }
+                }
+                
+                return {
+                    filename: placement.filename,
+                    originalWidth: placement.originalWidth,
+                    originalHeight: placement.originalHeight,
+                    coefficient: placement.coefficient,
+                    position: {
+                        topLeftX: newTopLeftX,
+                        topLeftY: pos.topLeftY,
+                        bottomRightX: newBottomRightX,
+                        bottomRightY: pos.bottomRightY
+                    }
+                };
+            });
+        }
 
         function initGrid() {
             const canvas = document.getElementById('grid-canvas');
@@ -916,9 +1033,20 @@
             const statusEl = document.getElementById('status-indicator');
             statusEl.textContent = 'Saving...';
             
+            // Save current view's placements first
+            if (currentView === 'desktop') {
+                desktopPlacements = [...placements];
+                desktopGridWidth = gridWidth;
+            } else {
+                mobilePlacements = [...placements];
+                mobileGridWidth = gridWidth;
+            }
+            
             const layout = {
-                gridWidth: gridWidth,
-                placements: placements
+                gridWidth: desktopGridWidth,
+                placements: desktopPlacements,
+                mobileGridWidth: mobileGridWidth,
+                mobilePlacements: mobilePlacements
             };
             
             fetch(`/api/project/layout/update?slug=${projectSlug}`, {
@@ -953,9 +1081,49 @@
             }, 3000);
         }
 
+        // View toggle functionality
+        function switchView(view) {
+            // Save current placements
+            if (currentView === 'desktop') {
+                desktopPlacements = [...placements];
+                desktopGridWidth = gridWidth;
+            } else {
+                mobilePlacements = [...placements];
+                mobileGridWidth = gridWidth;
+            }
+
+            // Switch view
+            currentView = view;
+            
+            // Load placements for new view
+            if (view === 'desktop') {
+                placements = [...desktopPlacements];
+                gridWidth = desktopGridWidth;
+                document.getElementById('desktop-view-btn').classList.add('active');
+                document.getElementById('mobile-view-btn').classList.remove('active');
+            } else {
+                placements = [...mobilePlacements];
+                gridWidth = mobileGridWidth;
+                document.getElementById('mobile-view-btn').classList.add('active');
+                document.getElementById('desktop-view-btn').classList.remove('active');
+            }
+
+            // Update UI
+            document.getElementById('grid-width').value = gridWidth;
+            initGrid();
+        }
+
         // Event listeners
+        document.getElementById('desktop-view-btn').addEventListener('click', () => switchView('desktop'));
+        document.getElementById('mobile-view-btn').addEventListener('click', () => switchView('mobile'));
+
         document.getElementById('grid-width').addEventListener('change', function() {
             gridWidth = parseInt(this.value);
+            if (currentView === 'desktop') {
+                desktopGridWidth = gridWidth;
+            } else {
+                mobileGridWidth = gridWidth;
+            }
             initGrid();
         });
 

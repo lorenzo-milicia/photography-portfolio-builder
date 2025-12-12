@@ -8,23 +8,27 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/content"
+	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/images"
 )
 
 // Generator handles static site generation
 type Generator struct {
-	contentMgr   *content.Manager
-	outputDir    string
-	templatesDir string
-	templates    *template.Template
-	baseURL      string
+	contentMgr     *content.Manager
+	imageProcessor *images.Processor
+	outputDir      string
+	templatesDir   string
+	templates      *template.Template
+	baseURL        string
 }
 
 // NewGenerator creates a new site generator
 func NewGenerator(contentDir, outputDir, templatesDir string) *Generator {
+	cacheDir := filepath.Join(outputDir, ".cache")
 	return &Generator{
-		contentMgr:   content.NewManager(contentDir),
-		outputDir:    outputDir,
-		templatesDir: templatesDir,
+		contentMgr:     content.NewManager(contentDir),
+		imageProcessor: images.NewProcessor(cacheDir),
+		outputDir:      outputDir,
+		templatesDir:   templatesDir,
 	}
 }
 
@@ -35,7 +39,11 @@ func (g *Generator) Generate(baseURL string) error {
 
 	// Create template with helper functions
 	funcMap := template.FuncMap{
-		"add": func(a, b int) int { return a + b },
+		"add":    func(a, b int) int { return a + b },
+		"sub":    func(a, b int) int { return a - b },
+		"mul":    func(a, b float64) float64 { return a * b },
+		"le":     func(a, b int) bool { return a <= b },
+		"printf": fmt.Sprintf,
 		"sanitizeClass": func(s string) string {
 			// Replace dots and special chars with hyphens for valid CSS class names
 			result := ""
@@ -47,6 +55,17 @@ func (g *Generator) Generate(baseURL string) error {
 				}
 			}
 			return result
+		},
+		"calculateSizes": func(placement content.PhotoPlacement) string {
+			// Calculate the viewport width percentage for this image
+			// Grid is 12 columns, max container is 1400px
+			colSpan := placement.Position.BottomRightX - placement.Position.TopLeftX + 1
+			percentage := (colSpan * 100) / 12
+
+			// Generate sizes attribute for responsive images
+			// Format: (max-width: breakpoint) width, default-width
+			return fmt.Sprintf("(max-width: 768px) 100vw, (max-width: 1024px) %dvw, %dpx",
+				percentage, (colSpan*1400)/12)
 		},
 	}
 
@@ -154,6 +173,70 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error 
 		photoMap[photo.Filename] = photo
 	}
 
+	// Get all projects for navigation tabs
+	allProjects, err := g.contentMgr.ListProjects()
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to list projects for navigation")
+		allProjects = []*content.ProjectMetadata{}
+	}
+
+	// Optimize and copy photos to output (must be done before generating HTML)
+	variantsMap, err := g.optimizeProjectPhotos(project.Slug, layout)
+	if err != nil {
+		return fmt.Errorf("failed to optimize photos: %w", err)
+	}
+
+	// Create a map from original filename to variants for template use
+	originalToVariants := make(map[string]*images.ImageVariants)
+	for originalName, variants := range variantsMap {
+		originalToVariants[originalName] = variants
+	}
+
+	// Update layout with optimized filenames and create photo info map
+	optimizedLayout := &content.LayoutConfig{
+		GridWidth:        layout.GridWidth,
+		Placements:       make([]content.PhotoPlacement, len(layout.Placements)),
+		MobileGridWidth:  layout.MobileGridWidth,
+		MobilePlacements: make([]content.PhotoPlacement, len(layout.MobilePlacements)),
+	}
+	optimizedPhotoMap := make(map[string]*content.PhotoInfo)
+
+	for i, placement := range layout.Placements {
+		variants, ok := variantsMap[placement.Filename]
+		if !ok || variants == nil || len(variants.Variants) == 0 {
+			return fmt.Errorf("no variants generated for %s", placement.Filename)
+		}
+
+		// Use the largest variant as the default filename
+		largestVariant := variants.Variants[len(variants.Variants)-1]
+
+		optimizedLayout.Placements[i] = content.PhotoPlacement{
+			Filename: largestVariant.Filename,
+			Position: placement.Position,
+		}
+
+		// Create photo info with responsive variants
+		if photo, ok := photoMap[placement.Filename]; ok {
+			newPhoto := *photo // Copy
+			newPhoto.Filename = largestVariant.Filename
+			optimizedPhotoMap[largestVariant.Filename] = &newPhoto
+		}
+	}
+
+	// Process mobile placements if they exist
+	for i, placement := range layout.MobilePlacements {
+		variants, ok := variantsMap[placement.Filename]
+		if !ok || variants == nil || len(variants.Variants) == 0 {
+			return fmt.Errorf("no variants generated for mobile placement %s", placement.Filename)
+		}
+
+		largestVariant := variants.Variants[len(variants.Variants)-1]
+		optimizedLayout.MobilePlacements[i] = content.PhotoPlacement{
+			Filename: largestVariant.Filename,
+			Position: placement.Position,
+		}
+	}
+
 	// Create project page
 	pagePath := filepath.Join(projectDir, "index.html")
 	file, err := os.Create(pagePath)
@@ -163,20 +246,18 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error 
 	defer file.Close()
 
 	data := map[string]interface{}{
-		"Project":  project,
-		"Photos":   photos,
-		"PhotoMap": photoMap,
-		"Layout":   layout,
-		"BaseURL":  g.baseURL,
+		"Project":        project,
+		"Photos":         photos,
+		"PhotoMap":       optimizedPhotoMap,
+		"Layout":         optimizedLayout,
+		"OriginalLayout": layout, // Keep original for variant lookup
+		"VariantsMap":    originalToVariants,
+		"BaseURL":        g.baseURL,
+		"AllProjects":    allProjects,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "project.html", data); err != nil {
 		return fmt.Errorf("failed to execute template: %w", err)
-	}
-
-	// Copy photos to output
-	if err := g.copyProjectPhotos(project.Slug); err != nil {
-		return fmt.Errorf("failed to copy photos: %w", err)
 	}
 
 	return nil
@@ -223,37 +304,30 @@ func validateLayout(layout *content.LayoutConfig) error {
 	return nil
 }
 
-// copyProjectPhotos copies project photos to the output directory
-func (g *Generator) copyProjectPhotos(slug string) error {
+// optimizeProjectPhotos optimizes and copies project photos to the output directory
+// Returns a map from original filenames to image variants
+func (g *Generator) optimizeProjectPhotos(slug string, layout *content.LayoutConfig) (map[string]*images.ImageVariants, error) {
 	sourceDir := g.contentMgr.ProjectPhotosDir(slug)
 	destDir := filepath.Join(g.outputDir, "public", "static", "images", slug)
 
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return fmt.Errorf("failed to create images directory: %w", err)
-	}
-
-	entries, err := os.ReadDir(sourceDir)
+	// Use the image processor to optimize images based on layout
+	variantsMap, err := g.imageProcessor.ProcessProjectImages(sourceDir, destDir, layout)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return fmt.Errorf("failed to read photos directory: %w", err)
+		return nil, fmt.Errorf("failed to process images: %w", err)
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		sourcePath := filepath.Join(sourceDir, entry.Name())
-		destPath := filepath.Join(destDir, entry.Name())
-
-		if err := copyFile(sourcePath, destPath); err != nil {
-			return fmt.Errorf("failed to copy photo %s: %w", entry.Name(), err)
-		}
+	totalVariants := 0
+	for _, variants := range variantsMap {
+		totalVariants += len(variants.Variants)
 	}
 
-	return nil
+	log.Info().
+		Str("project", slug).
+		Int("images", len(variantsMap)).
+		Int("variants", totalVariants).
+		Msg("Optimized project images")
+
+	return variantsMap, nil
 }
 
 // copyStaticAssets copies static assets (CSS, JS) to output
