@@ -52,7 +52,7 @@
 
         .editor-content {
             display: grid;
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 420px 1fr;
             gap: 0;
             height: calc(100vh - 80px);
         }
@@ -76,6 +76,24 @@
             border-bottom: 1px solid var(--gray-lightest);
         }
 
+        .btn-clear-layout {
+            width: 100%;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .btn-clear-layout:hover {
+            background: var(--danger-dark);
+        }
+
         .grid-controls label {
             display: block;
             font-size: 0.875rem;
@@ -93,9 +111,9 @@
         }
 
         .photo-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
         }
 
         .photo-list-item {
@@ -104,6 +122,7 @@
             overflow: hidden;
             background: var(--gray-lightest);
             transition: var(--transition-fast);
+            cursor: pointer;
         }
 
         .photo-list-item.placed {
@@ -128,35 +147,36 @@
         }
 
         .photo-list-item-footer {
-            padding: 0.75rem;
+            padding: 0.5rem;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 0.35rem;
             background: white;
         }
 
         .photo-name {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--gray);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            flex: 1;
         }
 
         .btn-add {
-            padding: 0.35rem 0.75rem;
+            padding: 0.35rem;
             background: var(--success);
             color: white;
             border: none;
             border-radius: var(--radius-sm);
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 0.25rem;
             transition: var(--transition-fast);
+            width: 100%;
         }
 
         .btn-add:hover {
@@ -378,7 +398,9 @@
         </div>
         <div class="header-right">
             <span id="status-indicator" style="color: var(--gray); font-size: 0.875rem;"></span>
+            <button id="generate-btn" class="btn btn-secondary" title="Generate preview">⚡ Generate Preview</button>
             <button id="save-btn" class="btn btn-success">Save Layout</button>
+            <div id="generate-result" style="margin-left: 0.75rem; font-size: 0.9rem; display: inline-block;"></div>
         </div>
     </div>
 
@@ -389,23 +411,21 @@
                 <input type="number" id="grid-width" value="{{.Layout.GridWidth}}" min="1" max="24">
             </div>
 
-            <h3>Selected Photos</h3>
+            <button id="clear-layout-btn" class="btn-clear-layout">🗑️ Clear Layout</button>
+
+            <h3>Available Photos</h3>
             <div class="photo-list" id="photo-list">
                 {{range .Photos}}
-                {{if .Selected}}
                 <div class="photo-list-item" data-filename="{{.Filename}}">
                     <img src="{{.ThumbPath}}" alt="{{.Filename}}">
                     <div class="photo-list-item-footer">
-                        <div style="flex: 1; min-width: 0;">
-                            <div class="photo-name">{{.Filename}}</div>
-                            <div style="font-size: 0.7rem; color: var(--gray-light); margin-top: 0.125rem;">{{.RatioWidth}}:{{.RatioHeight}}</div>
-                        </div>
+                        <div class="photo-name" title="{{.Filename}}">{{.Filename}}</div>
+                        <div style="font-size: 0.65rem; color: var(--gray-light);">{{.RatioWidth}}:{{.RatioHeight}}</div>
                         <button class="btn-add" data-filename="{{.Filename}}">
-                            <span>+</span> Add
+                            + Add
                         </button>
                     </div>
                 </div>
-                {{end}}
                 {{end}}
             </div>
         </div>
@@ -444,14 +464,12 @@
         // Photo data from server
         const photos = {
             {{range .Photos}}
-            {{if .Selected}}
             '{{.Filename}}': {
                 filename: '{{.Filename}}',
                 thumbPath: '{{.ThumbPath}}',
                 ratioWidth: {{.RatioWidth}},
                 ratioHeight: {{.RatioHeight}}
             },
-            {{end}}
             {{end}}
         };
 
@@ -467,12 +485,33 @@
             // Calculate original dimensions from saved position
             const savedWidth = pos.bottomRightX - pos.topLeftX + 1;
             const savedHeight = pos.bottomRightY - pos.topLeftY + 1;
-            // Assume coefficient of 1 for saved layouts, so original = saved
+            // Derive original dimensions and coefficient from the photo's known ratio
+            const photoMeta = photos['{{.Filename}}'];
+            let originalWidth, originalHeight, coefficient;
+            if (photoMeta && photoMeta.ratioWidth && photoMeta.ratioHeight) {
+                originalWidth = photoMeta.ratioWidth;
+                originalHeight = photoMeta.ratioHeight;
+
+                // Compute separate coefficients for width and height and take nearest integer
+                const coefW = savedWidth / originalWidth;
+                const coefH = savedHeight / originalHeight;
+                // Average the two coefficients to be robust to small layout inconsistencies
+                coefficient = Math.max(1, Math.round((coefW + coefH) / 2));
+
+                // If coefficients are zero/NaN for any reason, fallback to 1
+                if (!isFinite(coefficient) || coefficient < 1) coefficient = 1;
+            } else {
+                // Fallback: treat saved size as the original (legacy data)
+                originalWidth = savedWidth;
+                originalHeight = savedHeight;
+                coefficient = 1;
+            }
+
             placements.push({
                 filename: '{{.Filename}}',
-                originalWidth: savedWidth,
-                originalHeight: savedHeight,
-                coefficient: 1,
+                originalWidth: originalWidth,
+                originalHeight: originalHeight,
+                coefficient: coefficient,
                 position: pos
             });
         }
@@ -605,6 +644,48 @@
             
             // Update photo list highlighting
             updatePhotoList();
+            // Ensure the selected placement is visible in the scrollable workspace
+            ensurePlacementVisible(index);
+        }
+
+        // Ensure a placement element is visible inside the scrollable workspace
+        function ensurePlacementVisible(index) {
+            // Find the rendered placement element
+            const container = document.getElementById('placement-container');
+            if (!container) return;
+            const el = container.querySelector("[data-index='" + index + "']");
+            if (!el) return;
+
+            // If the grid-workspace is scrollable, prefer to scroll it; otherwise fall back to window
+            const workspace = document.querySelector('.grid-workspace') || document.scrollingElement || document.documentElement;
+
+            // Compute bounding rects
+            const elRect = el.getBoundingClientRect();
+            const workspaceRect = workspace.getBoundingClientRect ? workspace.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+
+            // If element is below the visible bottom, scroll down so it becomes visible (with a small margin)
+            const margin = 24;
+            if (elRect.bottom > workspaceRect.bottom - margin) {
+                // Scroll the workspace by the amount the element exceeds the bottom
+                const delta = elRect.bottom - workspaceRect.bottom + margin;
+                // If workspace is an element with scrollTop, adjust it; otherwise use window.scrollBy
+                if (workspace.scrollTop !== undefined) {
+                    // Smooth scroll if supported
+                    workspace.scrollTo({ top: workspace.scrollTop + delta, behavior: 'smooth' });
+                } else {
+                    window.scrollBy({ top: delta, left: 0, behavior: 'smooth' });
+                }
+            }
+
+            // If element is above the visible top, scroll up
+            if (elRect.top < workspaceRect.top + margin) {
+                const delta = workspaceRect.top + margin - elRect.top;
+                if (workspace.scrollTop !== undefined) {
+                    workspace.scrollTo({ top: Math.max(0, workspace.scrollTop - delta), behavior: 'smooth' });
+                } else {
+                    window.scrollBy({ top: -delta, left: 0, behavior: 'smooth' });
+                }
+            }
         }
 
         function addPhoto(filename) {
@@ -652,18 +733,42 @@
                 position: position
             });
 
+            // Automatically select the newly added placement
+            const newIndex = placements.length - 1;
+
             console.log('Placements after add:', placements);
             initGrid();
-            showStatus('Photo added to grid', 'success');
+            // Select the newly added placement so controls/update reflect it
+            selectPlacement(newIndex);
+            showStatus('Photo added to grid and selected', 'success');
         }
 
         function findFirstFit(width, height) {
-            // Find first position where photo fits without overlapping existing placements
-            const maxRow = placements.length > 0 
-                ? Math.max(12, ...placements.map(p => p.position.bottomRightY))
-                : 12;
-            
-            for (let row = 1; row <= maxRow + 5; row++) {
+            // Find first position where photo fits without overlapping existing placements.
+            // Prefer starting search from the first currently visible row in the workspace
+            // so newly added photos appear in the visible area when possible.
+            let startRow = 1;
+            let maxRow = placements.length > 0 ? Math.max(12, ...placements.map(p => p.position.bottomRightY)) : 12;
+
+            try {
+                const workspace = document.querySelector('.grid-workspace');
+                const firstCell = document.querySelector('.grid-cell');
+                if (workspace && firstCell) {
+                    const rowHeight = firstCell.offsetHeight || 60;
+                    // Compute first visible row (1-indexed). Add a small buffer one row above.
+                    const visibleTop = Math.max(0, workspace.scrollTop || 0);
+                    startRow = Math.max(1, Math.floor(visibleTop / rowHeight) - 1 + 1);
+
+                    // Limit search to visible area + some extra rows below
+                    const visibleRows = Math.ceil((workspace.clientHeight || window.innerHeight) / rowHeight) + 6;
+                    maxRow = Math.max(maxRow, startRow + visibleRows);
+                }
+            } catch (err) {
+                // Fall back to default behavior
+                startRow = 1;
+            }
+
+            for (let row = startRow; row <= maxRow + 5; row++) {
                 for (let col = 1; col <= gridWidth; col++) {
                     const candidate = {
                         topLeftX: col,
@@ -671,19 +776,19 @@
                         bottomRightX: col + width - 1,
                         bottomRightY: row + height - 1
                     };
-                    
+
                     // Check if entirely within grid width
                     if (candidate.bottomRightX > gridWidth) {
                         continue;
                     }
-                    
+
                     // Check for overlaps with existing placements
                     let hasOverlap = false;
                     for (const placement of placements) {
                         const pos = placement.position;
                         // Two rectangles overlap if:
-                        // candidate.left < pos.right AND candidate.right > pos.left AND
-                        // candidate.top < pos.bottom AND candidate.bottom > pos.top
+                        // candidate.left <= pos.right AND candidate.right >= pos.left AND
+                        // candidate.top <= pos.bottom AND candidate.bottom >= pos.top
                         if (candidate.topLeftX <= pos.bottomRightX && 
                             candidate.bottomRightX >= pos.topLeftX &&
                             candidate.topLeftY <= pos.bottomRightY && 
@@ -692,13 +797,13 @@
                             break;
                         }
                     }
-                    
+
                     if (!hasOverlap) {
                         return candidate;
                     }
                 }
             }
-            
+
             return null;
         }
 
@@ -855,6 +960,57 @@
         });
 
         document.getElementById('save-btn').addEventListener('click', saveLayout);
+
+        // Generate preview handler
+        document.getElementById('generate-btn').addEventListener('click', async function() {
+            const genBtn = this;
+            const statusEl = document.getElementById('status-indicator');
+            const resultEl = document.getElementById('generate-result');
+
+            genBtn.disabled = true;
+            statusEl.textContent = 'Generating preview...';
+            statusEl.style.color = 'var(--primary)';
+            resultEl.textContent = '';
+
+            try {
+                const res = await fetch('/api/generate', { method: 'POST' });
+                const text = await res.text();
+                if (!res.ok) {
+                    statusEl.textContent = 'Generation failed';
+                    statusEl.style.color = 'var(--danger)';
+                    resultEl.innerHTML = text;
+                } else {
+                    statusEl.textContent = 'Generation complete';
+                    statusEl.style.color = 'var(--success)';
+                    // Backend returns a small HTML snippet with a preview link — show it
+                    resultEl.innerHTML = text;
+                }
+            } catch (err) {
+                console.error('Generate failed', err);
+                statusEl.textContent = 'Generation error';
+                statusEl.style.color = 'var(--danger)';
+                resultEl.textContent = String(err);
+            } finally {
+                genBtn.disabled = false;
+                setTimeout(() => { statusEl.textContent = ''; }, 4000);
+            }
+        });
+
+        // Clear layout button
+        document.getElementById('clear-layout-btn').addEventListener('click', function() {
+            if (placements.length === 0) {
+                showStatus('Layout is already empty', 'error');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to clear all photos from the layout? This will not be saved until you click Save Layout.')) {
+                placements = [];
+                selectedIndex = -1;
+                document.getElementById('selected-info').classList.remove('visible');
+                initGrid();
+                showStatus('Layout cleared (not saved yet)', 'success');
+            }
+        });
 
         // Attach add button listeners
         document.querySelectorAll('.btn-add').forEach(btn => {

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/util"
 	"golang.org/x/image/draw"
 )
 
@@ -18,61 +17,15 @@ type PhotoInfo struct {
 	Filename    string  `json:"filename"`
 	Path        string  `json:"path"`
 	Size        int64   `json:"size"`
-	Selected    bool    `json:"selected"`
 	AspectRatio float64 `json:"aspectRatio"` // width / height (deprecated, use RatioWidth/RatioHeight)
 	RatioWidth  int     `json:"ratioWidth"`  // integer width of aspect ratio (e.g., 3 for 3:2)
 	RatioHeight int     `json:"ratioHeight"` // integer height of aspect ratio (e.g., 2 for 3:2)
 	ThumbPath   string  `json:"thumbPath"`   // path to thumbnail for builder UI
 }
 
-// PhotoSelection stores which photos are selected for a project
-type PhotoSelection struct {
-	Selected []string `yaml:"selected"`
-}
-
-// ProjectPhotosSelectionPath returns the photos selection file path for a project
-func (m *Manager) ProjectPhotosSelectionPath(slug string) string {
-	return filepath.Join(m.ProjectDir(slug), "photos.yaml")
-}
-
-// GetPhotoSelection retrieves the selected photos for a project
-func (m *Manager) GetPhotoSelection(slug string) (*PhotoSelection, error) {
-	selectionPath := m.ProjectPhotosSelectionPath(slug)
-
-	// If file doesn't exist, return empty selection
-	if _, err := os.Stat(selectionPath); os.IsNotExist(err) {
-		return &PhotoSelection{Selected: []string{}}, nil
-	}
-
-	var selection PhotoSelection
-	if err := util.LoadYAML(selectionPath, &selection); err != nil {
-		return nil, fmt.Errorf("failed to load photo selection: %w", err)
-	}
-
-	return &selection, nil
-}
-
-// SavePhotoSelection saves the selected photos for a project
-func (m *Manager) SavePhotoSelection(slug string, selection *PhotoSelection) error {
-	selectionPath := m.ProjectPhotosSelectionPath(slug)
-	return util.SaveYAML(selectionPath, selection)
-}
-
-// ListPhotos returns all photos for a project with selection state
+// ListPhotos returns all photos for a project
 func (m *Manager) ListPhotos(slug string) ([]*PhotoInfo, error) {
 	photosDir := m.ProjectPhotosDir(slug)
-
-	// Get current selection
-	selection, err := m.GetPhotoSelection(slug)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get photo selection: %w", err)
-	}
-
-	// Create a map for quick lookup
-	selectedMap := make(map[string]bool)
-	for _, filename := range selection.Selected {
-		selectedMap[filename] = true
-	}
 
 	entries, err := os.ReadDir(photosDir)
 	if err != nil {
@@ -133,7 +86,6 @@ func (m *Manager) ListPhotos(slug string) ([]*PhotoInfo, error) {
 			Filename:    entry.Name(),
 			Path:        photoPath,
 			Size:        info.Size(),
-			Selected:    selectedMap[entry.Name()],
 			AspectRatio: aspectRatio,
 			RatioWidth:  ratioW,
 			RatioHeight: ratioH,
@@ -143,50 +95,6 @@ func (m *Manager) ListPhotos(slug string) ([]*PhotoInfo, error) {
 	}
 
 	return photos, nil
-}
-
-// ListSelectedPhotos returns only the selected photos for a project
-func (m *Manager) ListSelectedPhotos(slug string) ([]*PhotoInfo, error) {
-	allPhotos, err := m.ListPhotos(slug)
-	if err != nil {
-		return nil, err
-	}
-
-	var selectedPhotos []*PhotoInfo
-	for _, photo := range allPhotos {
-		if photo.Selected {
-			selectedPhotos = append(selectedPhotos, photo)
-		}
-	}
-
-	return selectedPhotos, nil
-}
-
-// TogglePhotoSelection toggles the selection state of a photo
-func (m *Manager) TogglePhotoSelection(slug, filename string) error {
-	selection, err := m.GetPhotoSelection(slug)
-	if err != nil {
-		return err
-	}
-
-	// Check if photo exists in selection
-	index := -1
-	for i, selected := range selection.Selected {
-		if selected == filename {
-			index = i
-			break
-		}
-	}
-
-	if index >= 0 {
-		// Remove from selection
-		selection.Selected = append(selection.Selected[:index], selection.Selected[index+1:]...)
-	} else {
-		// Add to selection
-		selection.Selected = append(selection.Selected, filename)
-	}
-
-	return m.SavePhotoSelection(slug, selection)
 }
 
 // getImageAspectRatio returns the aspect ratio (width/height) of an image
@@ -296,10 +204,4 @@ func generateThumbnail(sourcePath, thumbPath string, maxWidth int) error {
 	defer outFile.Close()
 
 	return jpeg.Encode(outFile, thumb, &jpeg.Options{Quality: 60})
-}
-
-// SetPhotoSelection sets the complete selection for a project
-func (m *Manager) SetPhotoSelection(slug string, filenames []string) error {
-	selection := &PhotoSelection{Selected: filenames}
-	return m.SavePhotoSelection(slug, selection)
 }

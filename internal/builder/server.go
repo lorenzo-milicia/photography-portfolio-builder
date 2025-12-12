@@ -65,7 +65,6 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/project/create", s.handleProjectCreate)
 	mux.HandleFunc("/api/project/update", s.handleProjectUpdate)
 	mux.HandleFunc("/api/project/delete", s.handleProjectDelete)
-	mux.HandleFunc("/api/project/photos/toggle", s.handlePhotoToggle)
 	mux.HandleFunc("/api/project/photos/list", s.handlePhotoList)
 	mux.HandleFunc("/api/project/layout/get", s.handleLayoutGet)
 	mux.HandleFunc("/api/project/layout/update", s.handleLayoutUpdate)
@@ -313,32 +312,6 @@ func (s *Server) handleProjectDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("HX-Redirect", "/")
-	w.WriteHeader(http.StatusOK)
-}
-
-// handlePhotoToggle toggles photo selection
-func (s *Server) handlePhotoToggle(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	slug := r.URL.Query().Get("slug")
-	filename := r.URL.Query().Get("filename")
-
-	if slug == "" || filename == "" {
-		http.Error(w, "Slug and filename are required", http.StatusBadRequest)
-		return
-	}
-
-	log.Debug().Str("slug", slug).Str("filename", filename).Msg("Toggling photo selection")
-
-	if err := s.contentMgr.TogglePhotoSelection(slug, filename); err != nil {
-		log.Error().Err(err).Str("slug", slug).Str("filename", filename).Msg("Failed to toggle photo selection")
-		http.Error(w, "Failed to toggle photo selection", http.StatusInternalServerError)
-		return
-	}
-
 	w.WriteHeader(http.StatusOK)
 }
 

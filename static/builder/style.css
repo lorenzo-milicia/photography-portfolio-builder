@@ -417,11 +417,6 @@ textarea {
     box-shadow: var(--shadow-md);
 }
 
-.photo-item.selected {
-    border-color: var(--success);
-    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1), var(--shadow-md);
-}
-
 .photo-item img {
     width: 100%;
     height: 220px;
@@ -432,64 +427,6 @@ textarea {
 
 .photo-item:hover img {
     transform: scale(1.05);
-}
-
-/* Photo Checkbox */
-.photo-checkbox {
-    position: absolute;
-    top: 0.75rem;
-    left: 0.75rem;
-    z-index: 10;
-}
-
-.photo-checkbox input[type="checkbox"] {
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
-    width: 0;
-    height: 0;
-}
-
-.photo-checkbox label {
-    display: block;
-    width: 32px;
-    height: 32px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 2px solid var(--gray-lighter);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(8px);
-    box-shadow: var(--shadow-sm);
-}
-
-.photo-checkbox label:hover {
-    background: var(--white);
-    border-color: var(--primary);
-    transform: scale(1.1);
-}
-
-.photo-checkbox .checkmark {
-    color: var(--success);
-    font-size: 1.25rem;
-    font-weight: bold;
-    opacity: 0;
-    transform: scale(0);
-    transition: var(--transition);
-}
-
-.photo-checkbox input[type="checkbox"]:checked + label {
-    background: var(--success);
-    border-color: var(--success);
-}
-
-.photo-checkbox input[type="checkbox"]:checked + label .checkmark {
-    opacity: 1;
-    transform: scale(1);
-    color: var(--white);
 }
 
 /* Photo Info */
