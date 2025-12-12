@@ -1,0 +1,80 @@
+<div class="card">
+    <h2>{{.Project.Title}}</h2>
+    
+    <form hx-post="/api/project/update" hx-target="#update-result">
+        <input type="hidden" name="slug" value="{{.Project.Slug}}">
+        
+        <div class="form-group">
+            <label for="title">Project Title</label>
+            <input type="text" id="title" name="title" value="{{.Project.Title}}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description">{{.Project.Description}}</textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-success">Update Project</button>
+        <button type="button" class="btn btn-danger" 
+                hx-post="/api/project/delete?slug={{.Project.Slug}}" 
+                hx-confirm="Are you sure you want to delete this project?"
+                hx-target="#main-content">
+            Delete Project
+        </button>
+        <div id="update-result" style="margin-top: 1rem;"></div>
+    </form>
+</div>
+
+<div class="card">
+    <h3>📸 Photo Selection</h3>
+    <p style="color: var(--text-light); margin-bottom: 1.5rem;">
+        Place photos in <code>content/photos/{{.Project.Slug}}/</code> and select which ones to include in your portfolio.
+    </p>
+    
+    <div id="photo-gallery">
+        {{if .Photos}}
+            {{range .Photos}}
+            <div class="photo-item {{if .Selected}}selected{{end}}" data-filename="{{.Filename}}">
+                <div class="photo-checkbox">
+                    <input type="checkbox" 
+                           id="photo-{{.Filename}}" 
+                           {{if .Selected}}checked{{end}}
+                           hx-post="/api/project/photos/toggle?slug={{$.Project.Slug}}&filename={{.Filename}}"
+                           hx-target="closest .photo-item"
+                           hx-swap="outerHTML">
+                    <label for="photo-{{.Filename}}">
+                        <span class="checkmark">✓</span>
+                    </label>
+                </div>
+                <img src="/content/photos/{{$.Project.Slug}}/{{.Filename}}" 
+                     alt="{{.Filename}}" 
+                     loading="lazy">
+                <div class="photo-info">
+                    <span class="photo-name">{{.Filename}}</span>
+                    <span class="photo-size">{{.Size | printf "%.2f KB" | printf "%s" }}</span>
+                </div>
+            </div>
+            {{end}}
+        {{else}}
+            <p style="text-align: center; color: var(--text-light); padding: 3rem;">
+                No photos found. Add photos to <code>content/photos/{{.Project.Slug}}/</code>
+            </p>
+        {{end}}
+    </div>
+</div>
+
+<div class="card">
+    <h3>🎨 Layout</h3>
+    <p style="color: var(--text-light); margin-bottom: 1.5rem;">
+        Arrange your selected photos on a customizable grid layout.
+    </p>
+    
+    <div style="display: flex; gap: 1rem; align-items: center;">
+        <a href="/layout/{{.Project.Slug}}" class="btn btn-primary" style="text-decoration: none;">
+            Edit Layout
+        </a>
+        <span style="color: var(--text-light); font-size: 0.875rem;">
+            Grid: {{.Layout.GridWidth}} columns, {{len .Layout.Placements}} photo(s) placed
+        </span>
+    </div>
+</div>

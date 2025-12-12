@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photography Portfolio</title>
+    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Photography Portfolio</h1>
+            <p>A collection of my photography projects</p>
+        </header>
+
+        {{if .Projects}}
+        <div class="project-list">
+            {{range .Projects}}
+            <a href="{{$.BaseURL}}/{{.Slug}}/" class="project-card">
+                <h2>{{.Title}}</h2>
+                <p>{{.Description}}</p>
+            </a>
+            {{end}}
+        </div>
+        {{else}}
+        <p>No projects available yet.</p>
+        {{end}}
+    </div>
+</body>
+</html>

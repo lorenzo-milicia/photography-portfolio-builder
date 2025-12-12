@@ -1,0 +1,22 @@
+{{range .Photos}}
+<div class="photo-item {{if .Selected}}selected{{end}}" data-filename="{{.Filename}}">
+    <div class="photo-checkbox">
+        <input type="checkbox" 
+               id="photo-{{.Filename}}" 
+               {{if .Selected}}checked{{end}}
+               hx-post="/api/project/photos/toggle?slug={{$.Project.Slug}}&filename={{.Filename}}"
+               hx-target="closest .photo-item"
+               hx-swap="outerHTML">
+        <label for="photo-{{.Filename}}">
+            <span class="checkmark">✓</span>
+        </label>
+    </div>
+    <img src="/content/photos/{{$.Project.Slug}}/{{.Filename}}" 
+         alt="{{.Filename}}" 
+         loading="lazy">
+    <div class="photo-info">
+        <span class="photo-name">{{.Filename}}</span>
+        <span class="photo-size">{{.Size}} bytes</span>
+    </div>
+</div>
+{{end}}

@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout Editor - {{.Project.Title}}</title>
+    <link rel="stylesheet" href="/static/builder/style.css">
+    <style>
+        body {
+            display: block;
+            overflow: auto;
+            height: auto;
+        }
+
+        .layout-editor-header {
+            background: white;
+            border-bottom: 2px solid var(--gray-lightest);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            transition: var(--transition-fast);
+        }
+
+        .back-link:hover {
+            background: var(--gray-lightest);
+        }
+
+        .editor-content {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 0;
+            height: calc(100vh - 80px);
+        }
+
+        .photo-sidebar {
+            background: white;
+            border-right: 2px solid var(--gray-lightest);
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .photo-sidebar h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+
+        .grid-controls {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-lightest);
+        }
+
+        .grid-controls label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+        }
+
+        .grid-controls input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--gray-lighter);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+        }
+
+        .photo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .photo-list-item {
+            border: 1px solid var(--gray-lighter);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: var(--gray-lightest);
+            transition: var(--transition-fast);
+        }
+
+        .photo-list-item.placed {
+            opacity: 0.5;
+        }
+
+        .photo-list-item.placed:hover {
+            opacity: 0.8;
+            border-color: var(--primary);
+        }
+
+        .photo-list-item.selected-in-list {
+            opacity: 1 !important;
+            border: 2px solid var(--danger);
+            box-shadow: var(--shadow-md);
+        }
+
+        .photo-list-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .photo-list-item-footer {
+            padding: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+        }
+
+        .photo-name {
+            font-size: 0.75rem;
+            color: var(--gray);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .btn-add {
+            padding: 0.35rem 0.75rem;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: var(--transition-fast);
+        }
+
+        .btn-add:hover {
+            background: var(--success-dark);
+        }
+
+        .btn-add:disabled {
+            background: var(--gray-light);
+            cursor: not-allowed;
+        }
+
+        .grid-workspace {
+            padding: 2rem;
+            overflow: auto;
+            background: var(--bg);
+        }
+
+        .grid-canvas {
+            display: grid;
+            gap: 1px;
+            background: var(--gray-lighter);
+            border: 2px solid var(--gray-lighter);
+            max-width: fit-content;
+            margin: 0 auto;
+        }
+
+        .grid-cell {
+            background: white;
+            min-width: 60px;
+            min-height: 60px;
+            position: relative;
+        }
+
+        .placement-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: grid;
+            gap: 1px;
+            pointer-events: none;
+        }
+
+        .placed-photo {
+            border: 3px solid var(--primary);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            cursor: pointer;
+            background: white;
+            position: relative;
+            transition: var(--transition-fast);
+            pointer-events: all;
+        }
+
+        .placed-photo:hover {
+            box-shadow: var(--shadow-lg);
+            z-index: 5;
+        }
+
+        .placed-photo.selected {
+            border-color: var(--danger);
+            border-width: 4px;
+            box-shadow: var(--shadow-xl);
+            z-index: 10;
+        }
+
+        .placed-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .placed-photo-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .placement-controls {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .placed-photo:hover .placement-controls,
+        .placed-photo.selected .placement-controls {
+            opacity: 1;
+        }
+
+        .control-btn {
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: var(--transition-fast);
+        }
+
+        .control-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+
+        .control-btn.btn-remove {
+            background: var(--danger);
+        }
+
+        .control-btn.btn-remove:hover {
+            background: var(--danger-dark);
+        }
+
+        .selected-info {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            border: 2px solid var(--danger);
+            min-width: 300px;
+            display: none;
+        }
+
+        .selected-info.visible {
+            display: block;
+        }
+
+        .selected-info h4 {
+            margin: 0 0 1rem 0;
+            color: var(--dark);
+            font-size: 1rem;
+        }
+
+        .movement-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .movement-controls .control-btn {
+            width: 100%;
+            height: 40px;
+        }
+
+        .movement-controls .control-btn:nth-child(2) {
+            grid-column: 2;
+        }
+
+        .movement-controls .control-btn:nth-child(4) {
+            grid-column: 1;
+        }
+
+        .movement-controls .control-btn:nth-child(5) {
+            grid-column: 3;
+        }
+
+        .movement-controls .control-btn:nth-child(6) {
+            grid-column: 2;
+        }
+
+        .size-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .size-controls .control-btn {
+            flex: 1;
+            height: 40px;
+            width: auto;
+        }
+
+        .status-message {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            display: none;
+        }
+
+        .status-message.success {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success-dark);
+            display: block;
+        }
+
+        .status-message.error {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger-dark);
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="layout-editor-header">
+        <div class="header-left">
+            <a href="/project/{{.Project.Slug}}" class="back-link">← Back to Project</a>
+            <h2 style="margin: 0;">{{.Project.Title}} - Layout Editor</h2>
+        </div>
+        <div class="header-right">
+            <span id="status-indicator" style="color: var(--gray); font-size: 0.875rem;"></span>
+            <button id="save-btn" class="btn btn-success">Save Layout</button>
+        </div>
+    </div>
+
+    <div class="editor-content">
+        <div class="photo-sidebar">
+            <div class="grid-controls">
+                <label>Grid Columns</label>
+                <input type="number" id="grid-width" value="{{.Layout.GridWidth}}" min="1" max="24">
+            </div>
+
+            <h3>Selected Photos</h3>
+            <div class="photo-list" id="photo-list">
+                {{range .Photos}}
+                {{if .Selected}}
+                <div class="photo-list-item" data-filename="{{.Filename}}">
+                    <img src="{{.ThumbPath}}" alt="{{.Filename}}">
+                    <div class="photo-list-item-footer">
+                        <div style="flex: 1; min-width: 0;">
+                            <div class="photo-name">{{.Filename}}</div>
+                            <div style="font-size: 0.7rem; color: var(--gray-light); margin-top: 0.125rem;">{{.RatioWidth}}:{{.RatioHeight}}</div>
+                        </div>
+                        <button class="btn-add" data-filename="{{.Filename}}">
+                            <span>+</span> Add
+                        </button>
+                    </div>
+                </div>
+                {{end}}
+                {{end}}
+            </div>
+        </div>
+
+        <div class="grid-workspace">
+            <div style="position: relative; display: inline-block; margin: 0 auto;">
+                <div id="grid-canvas" class="grid-canvas"></div>
+                <div id="placement-container" class="placement-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="selected-info" class="selected-info">
+        <h4 id="selected-photo-name"></h4>
+        <div id="selected-photo-info" style="font-size: 0.875rem; color: var(--gray); margin-bottom: 1rem;"></div>
+        <div class="movement-controls">
+            <button class="control-btn" data-action="move-up" title="Move Up">↑</button>
+            <button class="control-btn" data-action="move-left" title="Move Left">←</button>
+            <button class="control-btn" data-action="move-right" title="Move Right">→</button>
+            <button class="control-btn" data-action="move-down" title="Move Down">↓</button>
+        </div>
+        <div class="size-controls">
+            <button class="control-btn" data-action="shrink" title="Decrease Size">🔍-</button>
+            <button class="control-btn" data-action="grow" title="Increase Size">🔍+</button>
+            <button class="control-btn btn-remove" data-action="remove" title="Remove">🗑️ Remove</button>
+        </div>
+        <div id="status-message" class="status-message"></div>
+    </div>
+
+    <script>
+        const projectSlug = '{{.Project.Slug}}';
+        let gridWidth = parseInt(document.getElementById('grid-width').value);
+        let placements = [];
+        let selectedIndex = -1;
+
+        // Photo data from server
+        const photos = {
+            {{range .Photos}}
+            {{if .Selected}}
+            '{{.Filename}}': {
+                filename: '{{.Filename}}',
+                thumbPath: '{{.ThumbPath}}',
+                ratioWidth: {{.RatioWidth}},
+                ratioHeight: {{.RatioHeight}}
+            },
+            {{end}}
+            {{end}}
+        };
+
+        // Initialize placements from server
+        {{range .Layout.Placements}}
+        {
+            const pos = {
+                topLeftX: {{.Position.TopLeftX}},
+                topLeftY: {{.Position.TopLeftY}},
+                bottomRightX: {{.Position.BottomRightX}},
+                bottomRightY: {{.Position.BottomRightY}}
+            };
+            // Calculate original dimensions from saved position
+            const savedWidth = pos.bottomRightX - pos.topLeftX + 1;
+            const savedHeight = pos.bottomRightY - pos.topLeftY + 1;
+            // Assume coefficient of 1 for saved layouts, so original = saved
+            placements.push({
+                filename: '{{.Filename}}',
+                originalWidth: savedWidth,
+                originalHeight: savedHeight,
+                coefficient: 1,
+                position: pos
+            });
+        }
+        {{end}}
+
+        function initGrid() {
+            const canvas = document.getElementById('grid-canvas');
+            canvas.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
+            canvas.innerHTML = '';
+
+            // Calculate max row needed
+            let maxRow = 12;
+            placements.forEach(p => {
+                if (p.position.bottomRightY > maxRow) maxRow = p.position.bottomRightY;
+            });
+
+            // Create grid cells
+            for (let row = 1; row <= maxRow; row++) {
+                for (let col = 1; col <= gridWidth; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    canvas.appendChild(cell);
+                }
+            }
+
+            renderPlacements();
+            updatePhotoList();
+        }
+
+        function renderPlacements() {
+            const container = document.getElementById('placement-container');
+            container.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
+            
+            // Calculate max row for grid
+            let maxRow = 12;
+            placements.forEach(p => {
+                if (p.position.bottomRightY > maxRow) maxRow = p.position.bottomRightY;
+            });
+            container.style.gridTemplateRows = `repeat(${maxRow}, 1fr)`;
+            
+            container.innerHTML = '';
+
+            placements.forEach((placement, index) => {
+                const photoDiv = document.createElement('div');
+                photoDiv.className = 'placed-photo';
+                if (index === selectedIndex) photoDiv.classList.add('selected');
+                
+                photoDiv.dataset.index = index;
+                const pos = placement.position;
+                photoDiv.style.gridColumn = `${pos.topLeftX} / ${pos.bottomRightX + 1}`;
+                photoDiv.style.gridRow = `${pos.topLeftY} / ${pos.bottomRightY + 1}`;
+
+                const photo = photos[placement.filename];
+                if (photo) {
+                    const img = document.createElement('img');
+                    img.src = photo.thumbPath;
+                    img.alt = placement.filename;
+                    photoDiv.appendChild(img);
+                }
+
+                const label = document.createElement('div');
+                label.className = 'placed-photo-label';
+                label.textContent = placement.filename;
+                photoDiv.appendChild(label);
+
+                photoDiv.addEventListener('click', () => selectPlacement(index));
+                container.appendChild(photoDiv);
+            });
+        }
+
+        function updatePhotoList() {
+            const placedFilenames = new Set(placements.map(p => p.filename));
+            const selectedFilename = selectedIndex >= 0 ? placements[selectedIndex]?.filename : null;
+            
+            document.querySelectorAll('.photo-list-item').forEach(item => {
+                const filename = item.dataset.filename;
+                const btn = item.querySelector('.btn-add');
+                
+                // Highlight selected photo
+                if (filename === selectedFilename) {
+                    item.classList.add('selected-in-list');
+                } else {
+                    item.classList.remove('selected-in-list');
+                }
+                
+                if (placedFilenames.has(filename)) {
+                    item.classList.add('placed');
+                    btn.disabled = true;
+                    btn.textContent = '✓ Placed';
+                    
+                    // Make the item clickable to select the photo in the grid
+                    item.style.cursor = 'pointer';
+                    item.onclick = (e) => {
+                        // Don't trigger if clicking the button
+                        if (e.target.closest('.btn-add')) return;
+                        
+                        // Find and select this photo in placements
+                        const index = placements.findIndex(p => p.filename === filename);
+                        if (index >= 0) {
+                            selectPlacement(index);
+                        }
+                    };
+                } else {
+                    item.classList.remove('placed');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>+</span> Add';
+                    item.style.cursor = 'default';
+                    item.onclick = null;
+                }
+            });
+        }
+
+        function selectPlacement(index) {
+            selectedIndex = index;
+            renderPlacements();
+            
+            const placement = placements[index];
+            const photo = photos[placement.filename];
+            
+            const info = document.getElementById('selected-info');
+            info.classList.add('visible');
+            document.getElementById('selected-photo-name').textContent = placement.filename;
+            
+            if (photo) {
+                const width = placement.originalWidth * placement.coefficient;
+                const height = placement.originalHeight * placement.coefficient;
+                document.getElementById('selected-photo-info').textContent = 
+                    `Ratio: ${photo.ratioWidth}:${photo.ratioHeight} | Size: ${width}×${height} (×${placement.coefficient})`;
+            }
+            
+            // Update photo list highlighting
+            updatePhotoList();
+        }
+
+        function addPhoto(filename) {
+            console.log('addPhoto called with:', filename);
+            const photo = photos[filename];
+            if (!photo) {
+                console.error('Photo not found:', filename);
+                return;
+            }
+
+            // Use integer ratio from backend
+            let originalWidth = photo.ratioWidth;
+            let originalHeight = photo.ratioHeight;
+            
+            // If original width exceeds grid, scale down proportionally
+            let finalOriginalWidth = originalWidth;
+            let finalOriginalHeight = originalHeight;
+            if (originalWidth > gridWidth) {
+                const scale = gridWidth / originalWidth;
+                finalOriginalWidth = gridWidth;
+                finalOriginalHeight = Math.max(1, Math.round(originalHeight * scale));
+            }
+
+            // Start with coefficient = 1
+            const coefficient = 1;
+            const width = finalOriginalWidth * coefficient;
+            const height = finalOriginalHeight * coefficient;
+
+            console.log('Original dimensions:', finalOriginalWidth, 'x', finalOriginalHeight, 'coefficient:', coefficient, 'final size:', width, 'x', height);
+
+            // Find first available position
+            const position = findFirstFit(width, height);
+            console.log('Found position:', position);
+            
+            if (!position) {
+                showStatus('No space available in grid. Try increasing grid size or removing photos.', 'error');
+                return;
+            }
+
+            placements.push({
+                filename: filename,
+                originalWidth: finalOriginalWidth,
+                originalHeight: finalOriginalHeight,
+                coefficient: coefficient,
+                position: position
+            });
+
+            console.log('Placements after add:', placements);
+            initGrid();
+            showStatus('Photo added to grid', 'success');
+        }
+
+        function findFirstFit(width, height) {
+            // Find first position where photo fits without overlapping existing placements
+            const maxRow = placements.length > 0 
+                ? Math.max(12, ...placements.map(p => p.position.bottomRightY))
+                : 12;
+            
+            for (let row = 1; row <= maxRow + 5; row++) {
+                for (let col = 1; col <= gridWidth; col++) {
+                    const candidate = {
+                        topLeftX: col,
+                        topLeftY: row,
+                        bottomRightX: col + width - 1,
+                        bottomRightY: row + height - 1
+                    };
+                    
+                    // Check if entirely within grid width
+                    if (candidate.bottomRightX > gridWidth) {
+                        continue;
+                    }
+                    
+                    // Check for overlaps with existing placements
+                    let hasOverlap = false;
+                    for (const placement of placements) {
+                        const pos = placement.position;
+                        // Two rectangles overlap if:
+                        // candidate.left < pos.right AND candidate.right > pos.left AND
+                        // candidate.top < pos.bottom AND candidate.bottom > pos.top
+                        if (candidate.topLeftX <= pos.bottomRightX && 
+                            candidate.bottomRightX >= pos.topLeftX &&
+                            candidate.topLeftY <= pos.bottomRightY && 
+                            candidate.bottomRightY >= pos.topLeftY) {
+                            hasOverlap = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!hasOverlap) {
+                        return candidate;
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        function movePhoto(direction) {
+            if (selectedIndex < 0) return;
+            
+            const placement = placements[selectedIndex];
+            const pos = placement.position;
+            
+            let moved = false;
+            switch(direction) {
+                case 'up':
+                    if (pos.topLeftY > 1) {
+                        pos.topLeftY--;
+                        pos.bottomRightY--;
+                        moved = true;
+                    }
+                    break;
+                case 'down':
+                    pos.topLeftY++;
+                    pos.bottomRightY++;
+                    moved = true;
+                    break;
+                case 'left':
+                    if (pos.topLeftX > 1) {
+                        pos.topLeftX--;
+                        pos.bottomRightX--;
+                        moved = true;
+                    }
+                    break;
+                case 'right':
+                    if (pos.bottomRightX < gridWidth) {
+                        pos.topLeftX++;
+                        pos.bottomRightX++;
+                        moved = true;
+                    }
+                    break;
+            }
+            
+            if (moved) {
+                initGrid();
+                selectPlacement(selectedIndex);
+            }
+        }
+
+        function growPhoto() {
+            if (selectedIndex < 0) return;
+            
+            const placement = placements[selectedIndex];
+            const pos = placement.position;
+            
+            const newCoefficient = placement.coefficient + 1;
+            const newWidth = placement.originalWidth * newCoefficient;
+            const newHeight = placement.originalHeight * newCoefficient;
+            
+            // Check if new size fits at current position
+            if (pos.topLeftX + newWidth - 1 > gridWidth) {
+                showStatus('Cannot grow photo further - exceeds grid width', 'error');
+                return;
+            }
+            
+            // Apply new size
+            placement.coefficient = newCoefficient;
+            pos.bottomRightX = pos.topLeftX + newWidth - 1;
+            pos.bottomRightY = pos.topLeftY + newHeight - 1;
+            
+            console.log(`Grew to coefficient ${newCoefficient}: ${newWidth}x${newHeight}`);
+            initGrid();
+            selectPlacement(selectedIndex);
+            showStatus(`Photo size increased (×${newCoefficient}): ${newWidth}×${newHeight}`, 'success');
+        }
+
+        function shrinkPhoto() {
+            if (selectedIndex < 0) return;
+            
+            const placement = placements[selectedIndex];
+            
+            if (placement.coefficient <= 1) {
+                showStatus('Cannot shrink below minimum size (coefficient = 1)', 'error');
+                return;
+            }
+            
+            const pos = placement.position;
+            const newCoefficient = placement.coefficient - 1;
+            const newWidth = placement.originalWidth * newCoefficient;
+            const newHeight = placement.originalHeight * newCoefficient;
+            
+            // Apply new size
+            placement.coefficient = newCoefficient;
+            pos.bottomRightX = pos.topLeftX + newWidth - 1;
+            pos.bottomRightY = pos.topLeftY + newHeight - 1;
+            
+            console.log(`Shrunk to coefficient ${newCoefficient}: ${newWidth}x${newHeight}`);
+            initGrid();
+            selectPlacement(selectedIndex);
+            showStatus(`Photo size decreased (×${newCoefficient}): ${newWidth}×${newHeight}`, 'success');
+        }
+
+        function removePhoto() {
+            if (selectedIndex < 0) return;
+
+            placements.splice(selectedIndex, 1);
+            selectedIndex = -1;
+            document.getElementById('selected-info').classList.remove('visible');
+            initGrid();
+            showStatus('Photo removed from grid', 'success');
+        }
+
+        function saveLayout() {
+            const statusEl = document.getElementById('status-indicator');
+            statusEl.textContent = 'Saving...';
+            
+            const layout = {
+                gridWidth: gridWidth,
+                placements: placements
+            };
+            
+            fetch(`/api/project/layout/update?slug=${projectSlug}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(layout)
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to save');
+                return res.json();
+            })
+            .then(() => {
+                statusEl.textContent = '✓ Saved';
+                statusEl.style.color = 'var(--success)';
+                setTimeout(() => {
+                    statusEl.textContent = '';
+                }, 2000);
+            })
+            .catch(err => {
+                statusEl.textContent = '✗ Save failed';
+                statusEl.style.color = 'var(--danger)';
+                console.error(err);
+            });
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type}`;
+            setTimeout(() => {
+                statusEl.className = 'status-message';
+            }, 3000);
+        }
+
+        // Event listeners
+        document.getElementById('grid-width').addEventListener('change', function() {
+            gridWidth = parseInt(this.value);
+            initGrid();
+        });
+
+        document.getElementById('save-btn').addEventListener('click', saveLayout);
+
+        // Attach add button listeners
+        document.querySelectorAll('.btn-add').forEach(btn => {
+            console.log('Attaching listener to button for:', btn.dataset.filename);
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Add button clicked for:', this.dataset.filename);
+                addPhoto(this.dataset.filename);
+            });
+        });
+
+        document.querySelectorAll('[data-action]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const action = this.dataset.action;
+                switch(action) {
+                    case 'move-up': movePhoto('up'); break;
+                    case 'move-down': movePhoto('down'); break;
+                    case 'move-left': movePhoto('left'); break;
+                    case 'move-right': movePhoto('right'); break;
+                    case 'grow': growPhoto(); break;
+                    case 'shrink': shrinkPhoto(); break;
+                    case 'remove': removePhoto(); break;
+                }
+            });
+        });
+
+        // Close selection panel when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.placed-photo') && 
+                !e.target.closest('.selected-info') && 
+                !e.target.closest('.photo-list-item.placed')) {
+                selectedIndex = -1;
+                document.getElementById('selected-info').classList.remove('visible');
+                renderPlacements();
+                updatePhotoList();
+            }
+        });
+
+        // Keyboard controls for moving photos
+        document.addEventListener('keydown', function(e) {
+            if (selectedIndex < 0) return;
+            
+            // Only handle arrow keys when not in an input field
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                    e.preventDefault();
+                    movePhoto('up');
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    movePhoto('down');
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    movePhoto('left');
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    movePhoto('right');
+                    break;
+                case '+':
+                case '=':
+                    e.preventDefault();
+                    growPhoto();
+                    break;
+                case '-':
+                case '_':
+                    e.preventDefault();
+                    shrinkPhoto();
+                    break;
+                case 'Delete':
+                case 'Backspace':
+                    e.preventDefault();
+                    removePhoto();
+                    break;
+            }
+        });
+
+        // Initialize
+        initGrid();
+    </script>
+</body>
+</html>

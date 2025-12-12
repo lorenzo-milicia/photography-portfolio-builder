@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Project.Title}} - Photography Portfolio</title>
+    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
+    <style>
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat({{.Layout.GridWidth}}, 1fr);
+            grid-auto-rows: minmax(100px, auto);
+            gap: 1rem;
+            max-width: 1400px;
+            margin: 2rem auto;
+        }
+        
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        {{range $idx, $placement := .Layout.Placements}}
+        {{$photo := index $.PhotoMap $placement.Filename}}
+        {{if $photo}}
+        .photo-{{$idx}}-{{sanitizeClass $placement.Filename}} {
+            grid-column: {{$placement.Position.TopLeftX}} / {{add $placement.Position.BottomRightX 1}};
+            grid-row: {{$placement.Position.TopLeftY}} / {{add $placement.Position.BottomRightY 1}};
+        }
+        {{end}}
+        {{end}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav>
+                <a href="{{.BaseURL}}/">&larr; Back to Portfolio</a>
+            </nav>
+            <h1>{{.Project.Title}}</h1>
+            {{if .Project.Description}}
+            <p>{{.Project.Description}}</p>
+            {{end}}
+        </header>
+
+        {{if .Layout.Placements}}
+        <div class="gallery-grid">
+            {{range $idx, $placement := .Layout.Placements}}
+            {{$photo := index $.PhotoMap $placement.Filename}}
+            {{if $photo}}
+            <div class="gallery-item photo-{{$idx}}-{{sanitizeClass $placement.Filename}}">
+                <img src="{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$photo.Filename}}" 
+                     alt="{{$photo.Filename}}"
+                     loading="lazy">
+            </div>
+            {{end}}
+            {{end}}
+        </div>
+        {{else}}
+        <p>No photos placed in the layout yet.</p>
+        {{end}}
+    </div>
+</body>
+</html>

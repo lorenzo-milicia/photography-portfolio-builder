@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photography Portfolio Builder</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="/static/builder/style.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <h1>📷 Portfolio Builder</h1>
+        
+        <button class="btn" hx-get="/project/new" hx-target="#main-content" hx-swap="innerHTML">
+            + New Project
+        </button>
+
+        <h2>Projects</h2>
+        <div hx-get="/projects" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+            Loading projects...
+        </div>
+
+        <div class="generate-section">
+            <button class="btn btn-success" hx-post="/api/generate" hx-target="#generate-result">
+                🚀 Generate Site
+            </button>
+            <div id="generate-result" style="margin-top: 1rem; font-size: 0.9rem;"></div>
+        </div>
+    </aside>
+
+    <main class="main-content" id="main-content">
+        {{if .Content}}
+            {{.Content}}
+        {{else}}
+            <div class="welcome">
+                <h2>Welcome to Portfolio Builder</h2>
+                <p>Create a new project to get started, or select an existing one from the sidebar.</p>
+            </div>
+        {{end}}
+    </main>
+</body>
+</html>
