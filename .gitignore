@@ -19,8 +19,7 @@ go.work
 vendor/
 
 # Generated content
-content/projects/
-content/photos/
+content/
 
 # Generated output
 output/
