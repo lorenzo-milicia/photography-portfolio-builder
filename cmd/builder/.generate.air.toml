@@ -1,0 +1,5 @@
+### This configuration was moved to the repository root `.air.toml`.
+### Please use the root-level `.air.toml` (project root) to run the content watcher.
+### You can start it from project root with:
+###   air -c .air.toml
+

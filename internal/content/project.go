@@ -56,6 +56,30 @@ func NewManager(contentDir string) *Manager {
 	return &Manager{contentDir: contentDir}
 }
 
+// SiteMetadata holds site-level metadata (global settings)
+type SiteMetadata struct {
+	Copyright   string `yaml:"copyright"`
+	WebsiteName string `yaml:"website_name"`
+}
+
+// SiteMetaPath returns the path to the site-level metadata YAML file
+func (m *Manager) SiteMetaPath() string {
+	return filepath.Join(m.contentDir, "site.yaml")
+}
+
+// LoadSiteMeta loads the site metadata if present. If the file does not exist
+// an empty SiteMetadata is returned with no error.
+func (m *Manager) LoadSiteMeta() (*SiteMetadata, error) {
+	var meta SiteMetadata
+	if err := util.LoadYAML(m.SiteMetaPath(), &meta); err != nil {
+		if os.IsNotExist(err) {
+			return &meta, nil
+		}
+		return nil, err
+	}
+	return &meta, nil
+}
+
 // ProjectsDir returns the projects directory path
 func (m *Manager) ProjectsDir() string {
 	return filepath.Join(m.contentDir, "projects")

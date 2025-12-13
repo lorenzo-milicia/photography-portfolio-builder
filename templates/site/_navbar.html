@@ -1,0 +1,79 @@
+{{define "navbar"}}
+<nav class="main-navbar">
+    <div class="navbar-container">
+        <div class="navbar-logo">{{.WebsiteName}}</div>
+        {{if .Project}}
+        <div class="navbar-center">
+            <span class="current-project">{{.Project.Title}}</span>
+        </div>
+        {{end}}
+        <div class="navbar-actions">
+            <a href="{{.BaseURL}}/" class="navbar-link">Home</a>
+            <div class="dropdown">
+                <button class="dropdown-toggle" onclick="const menu = this.nextElementSibling; menu.classList.toggle('open'); this.classList.toggle('active')">Projects</button>
+                <div class="dropdown-menu">
+                    {{if .AllProjects}}
+                    {{range .AllProjects}}
+                    <a href="{{$.BaseURL}}/{{.Slug}}/" class="dropdown-item{{if eq .Slug $.Project.Slug}} active{{end}}">{{.Title}}</a>
+                    {{end}}
+                    {{else if .Projects}}
+                    {{range .Projects}}
+                    <a href="{{$.BaseURL}}/{{.Slug}}/" class="dropdown-item{{if eq .Slug $.Project.Slug}} active{{end}}">{{.Title}}</a>
+                    {{end}}
+                    {{end}}
+                </div>
+            </div>
+            <a href="{{.BaseURL}}/about/" class="navbar-link">About</a>
+        </div>
+    </div>
+</nav>
+<script>
+// Dropdown click handler
+document.addEventListener('click', function(e) {
+    const dropdowns = document.querySelectorAll('.dropdown');
+    dropdowns.forEach(dropdown => {
+        const menu = dropdown.querySelector('.dropdown-menu');
+        const toggle = dropdown.querySelector('.dropdown-toggle');
+        if (!dropdown.contains(e.target)) {
+            menu.classList.remove('open');
+            toggle.classList.remove('active');
+        }
+    });
+});
+
+// Scroll-based navbar project title reveal
+document.addEventListener('DOMContentLoaded', function() {
+    const navbarCenter = document.querySelector('.navbar-center');
+    if (navbarCenter) {
+        const projectTitle = document.querySelector('.project-title');
+        if (projectTitle) {
+            let ticking = false;
+            
+            function updateNavbarTitle() {
+                const titleRect = projectTitle.getBoundingClientRect();
+                const navbar = document.querySelector('.main-navbar');
+                const navbarBottom = navbar.getBoundingClientRect().bottom;
+                
+                // Show navbar title when project title scrolls past navbar
+                if (titleRect.bottom < navbarBottom) {
+                    navbarCenter.classList.add('visible');
+                } else {
+                    navbarCenter.classList.remove('visible');
+                }
+                ticking = false;
+            }
+            
+            window.addEventListener('scroll', function() {
+                if (!ticking) {
+                    window.requestAnimationFrame(updateNavbarTitle);
+                    ticking = true;
+                }
+            });
+            
+            // Initial check
+            updateNavbarTitle();
+        }
+    }
+});
+</script>
+{{end}}

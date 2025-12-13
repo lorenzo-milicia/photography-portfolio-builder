@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
 </head>
 <body>
+    {{template "navbar" .}}
     <div class="home-container">
         <header class="home-header">
             <div class="header-content">
@@ -41,7 +42,7 @@
         {{end}}
 
         <footer class="home-footer">
-            <p>&copy; 2025 Lorenzo Milicia. All rights reserved.</p>
+            <p>&copy; {{.Copyright}}</p>
         </footer>
     </div>
 

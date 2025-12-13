@@ -45,11 +45,12 @@ How to use (recommended):
 
 1. Run `Build` once to compile (or use the `Build` task in the status bar).
 2. Use `Run` to start the builder UI while developing.
-3. Use `Generate Site (Preview)` to preview generated output under `/preview/`.
-4. Use `Generate Site (Production)` to produce final site files with root asset paths.
-5. Use `Serve Static Site` and open `http://localhost:8000/` to inspect `output/public`.
+3. Use `Generate Site (Production)` for live testing of template/CSS changes (uses air for auto-regeneration on file changes).
+4. Use `Generate Site (Preview)` to preview generated output under `/preview/`.
+5. Use `Generate Site (Production)` to produce final site files with root asset paths.
+6. Use `Serve Static Site` and open `http://localhost:8080/` to inspect `output/public`.
 
-Do not run the `just` commands from the instructions — use the VS Code tasks listed above.
+Note: Avoid manual `just` commands — always use VS Code tasks for consistent terminal management.
 
 ## **3. Static Site Generation**
   - Project editor  

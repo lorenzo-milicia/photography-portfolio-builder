@@ -97,6 +97,12 @@ func (g *Generator) Generate(baseURL string) error {
 		return fmt.Errorf("failed to generate index: %w", err)
 	}
 
+	// Generate about page
+	log.Debug().Msg("Generating about page")
+	if err := g.generateAbout(); err != nil {
+		return fmt.Errorf("failed to generate about: %w", err)
+	}
+
 	// Generate project pages
 	for _, project := range projects {
 		log.Debug().Str("slug", project.Slug).Str("title", project.Title).Msg("Generating project page")
@@ -127,12 +133,83 @@ func (g *Generator) generateIndex(projects []*content.ProjectMetadata) error {
 	}
 	defer file.Close()
 
+	// Load optional site metadata (e.g. copyright) to pass to templates
+	siteMeta, err := g.contentMgr.LoadSiteMeta()
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to load site metadata")
+		siteMeta = &content.SiteMetadata{
+			Copyright:   "2025 Photography Portfolio. All rights reserved.",
+			WebsiteName: "Photography Portfolio",
+		}
+	}
+	if siteMeta.Copyright == "" {
+		siteMeta.Copyright = "2025 Photography Portfolio. All rights reserved."
+	}
+	if siteMeta.WebsiteName == "" {
+		siteMeta.WebsiteName = "Photography Portfolio"
+	}
+
 	data := map[string]interface{}{
-		"Projects": projects,
-		"BaseURL":  g.baseURL,
+		"Projects":    projects,
+		"BaseURL":     g.baseURL,
+		"Copyright":   siteMeta.Copyright,
+		"WebsiteName": siteMeta.WebsiteName,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "index.html", data); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return nil
+}
+
+// generateAbout generates the about page
+func (g *Generator) generateAbout() error {
+	publicDir := filepath.Join(g.outputDir, "public")
+	aboutDir := filepath.Join(publicDir, "about")
+
+	if err := os.MkdirAll(aboutDir, 0755); err != nil {
+		return fmt.Errorf("failed to create about directory: %w", err)
+	}
+
+	aboutPath := filepath.Join(aboutDir, "index.html")
+
+	file, err := os.Create(aboutPath)
+	if err != nil {
+		return fmt.Errorf("failed to create about.html: %w", err)
+	}
+	defer file.Close()
+
+	// Load site metadata
+	siteMeta, err := g.contentMgr.LoadSiteMeta()
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to load site metadata")
+		siteMeta = &content.SiteMetadata{
+			Copyright:   "2025 Photography Portfolio. All rights reserved.",
+			WebsiteName: "Photography Portfolio",
+		}
+	}
+	if siteMeta.Copyright == "" {
+		siteMeta.Copyright = "2025 Photography Portfolio. All rights reserved."
+	}
+	if siteMeta.WebsiteName == "" {
+		siteMeta.WebsiteName = "Photography Portfolio"
+	}
+
+	// Get all projects for navigation
+	projects, err := g.contentMgr.ListProjects()
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to list projects for navigation")
+		projects = []*content.ProjectMetadata{}
+	}
+
+	data := map[string]interface{}{
+		"BaseURL":     g.baseURL,
+		"WebsiteName": siteMeta.WebsiteName,
+		"AllProjects": projects,
+	}
+
+	if err := g.templates.ExecuteTemplate(file, "about.html", data); err != nil {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
@@ -245,6 +322,22 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error 
 	}
 	defer file.Close()
 
+	// Load optional site metadata
+	siteMeta, err := g.contentMgr.LoadSiteMeta()
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to load site metadata")
+		siteMeta = &content.SiteMetadata{
+			Copyright:   "2025 Photography Portfolio. All rights reserved.",
+			WebsiteName: "Photography Portfolio",
+		}
+	}
+	if siteMeta.Copyright == "" {
+		siteMeta.Copyright = "2025 Photography Portfolio. All rights reserved."
+	}
+	if siteMeta.WebsiteName == "" {
+		siteMeta.WebsiteName = "Photography Portfolio"
+	}
+
 	data := map[string]interface{}{
 		"Project":        project,
 		"Photos":         photos,
@@ -254,6 +347,7 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error 
 		"VariantsMap":    originalToVariants,
 		"BaseURL":        g.baseURL,
 		"AllProjects":    allProjects,
+		"WebsiteName":    siteMeta.WebsiteName,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "project.html", data); err != nil {

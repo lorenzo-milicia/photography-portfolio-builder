@@ -89,25 +89,26 @@ body {
 
 .home-header {
     text-align: center;
-    padding: 6rem 2rem 4rem;
+    padding: 3.5rem 2rem 2.5rem;
     background: linear-gradient(180deg, var(--bg-alt) 0%, var(--bg) 100%);
     border-bottom: 1px solid var(--border);
 }
 
 .home-title {
-    font-size: 4rem;
+    font-size: 3.25rem;
     font-weight: 300;
     letter-spacing: -0.02em;
     color: var(--primary);
-    margin-bottom: 1rem;
-    line-height: 1.1;
+    margin-bottom: 1.25rem;
+    line-height: 1.15;
 }
 
 .home-subtitle {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     color: var(--text-light);
     font-weight: 400;
     letter-spacing: 0.02em;
+    margin-top: 0.5rem;
 }
 
 /* Projects Navigation */
@@ -206,11 +207,12 @@ body {
 /* Home Footer */
 .home-footer {
     text-align: center;
-    padding: 3rem 2rem;
+    padding: 1rem 1rem;
     color: var(--text-light);
     font-size: 0.9rem;
     border-top: 1px solid var(--border);
     margin-top: auto;
+    line-height: 1.4;
 }
 
 
@@ -227,12 +229,10 @@ body {
 }
 
 .navbar-container {
-    max-width: 1400px;
-    margin: 0 auto;
     padding: 1rem 2rem;
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    justify-content: space-between;
 }
 
 .navbar-back {
@@ -265,7 +265,6 @@ body {
     width: 1px;
     height: 24px;
     background: var(--border);
-    margin: 0 0.5rem;
 }
 
 .navbar-links {
@@ -314,6 +313,143 @@ body {
     height: 2px;
     background: var(--primary);
     border-radius: 2px 2px 0 0;
+}
+
+.navbar-logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Dropdown Styles */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-toggle {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: var(--transition);
+    position: relative;
+}
+
+.dropdown-toggle::before {
+    content: '›';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    font-size: 1.15rem;
+    line-height: 1;
+    color: inherit;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+}
+
+.dropdown-toggle:hover {
+    color: var(--text);
+    background: var(--bg-alt);
+}
+
+.dropdown-toggle.active::before {
+    transform: rotate(90deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    min-width: 200px;
+}
+
+.dropdown-menu.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--text);
+    text-decoration: none;
+    transition: var(--transition);
+    border-radius: 4px;
+    margin: 0.25rem;
+}
+
+.dropdown-item:hover {
+    background: var(--bg-alt);
+    color: var(--primary);
+}
+
+.dropdown-item.active {
+    background: var(--bg-alt);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.navbar-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+}
+
+.navbar-home:hover {
+    background: var(--bg-alt);
+    color: var(--primary);
+}
+
+/* Navbar Center - Current Project Display */
+.navbar-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navbar-center.visible {
+    opacity: 1;
+}
+
+.current-project {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--primary);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 300px;
+    overflow: hidden;
 }
 
 /* Header Styles */
@@ -522,12 +658,13 @@ p {
 
 /* Footer */
 footer {
-    margin-top: 6rem;
-    padding-top: 3rem;
+    margin-top: 2.5rem;
+    padding: 0.75rem 0 0.75rem;
     border-top: 1px solid var(--border);
     text-align: center;
     color: var(--text-light);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    line-height: 1.4;
 }
 
 /* Responsive Design */
