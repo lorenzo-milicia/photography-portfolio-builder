@@ -57,9 +57,20 @@ func NewManager(contentDir string) *Manager {
 }
 
 // SiteMetadata holds site-level metadata (global settings)
+// About holds about page content
+type About struct {
+	Title       string   `yaml:"title"`
+	Paragraphs  []string `yaml:"paragraphs"`
+	Quote       string   `yaml:"quote"`
+	QuoteSource string   `yaml:"quote_source,omitempty"`
+}
+
 type SiteMetadata struct {
-	Copyright   string `yaml:"copyright"`
-	WebsiteName string `yaml:"website_name"`
+	Copyright     string `yaml:"copyright"`
+	WebsiteName   string `yaml:"website_name"`
+	LogoPrimary   string `yaml:"logo_primary"`
+	LogoSecondary string `yaml:"logo_secondary"`
+	About         *About `yaml:"about,omitempty"`
 }
 
 // SiteMetaPath returns the path to the site-level metadata YAML file

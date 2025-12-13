@@ -1,12 +1,23 @@
 {{define "navbar"}}
 <nav class="main-navbar">
     <div class="navbar-container">
-        <div class="navbar-logo">{{.WebsiteName}}</div>
+        <a href="{{.BaseURL}}/" class="navbar-logo">
+            <span class="logo-primary">{{.LogoPrimary}}</span>
+            <span class="logo-separator">·</span>
+            <span class="logo-secondary">{{.LogoSecondary}}</span>
+        </a>
         {{if .Project}}
         <div class="navbar-center">
             <span class="current-project">{{.Project.Title}}</span>
         </div>
         {{end}}
+        <button class="navbar-toggle" onclick="toggleMobileMenu()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
         <div class="navbar-actions">
             <a href="{{.BaseURL}}/" class="navbar-link">Home</a>
             <div class="dropdown">
@@ -28,6 +39,27 @@
     </div>
 </nav>
 <script>
+// Mobile menu toggle
+function toggleMobileMenu() {
+    const navbarActions = document.querySelector('.navbar-actions');
+    navbarActions.classList.toggle('mobile-open');
+}
+
+// Close mobile menu when clicking outside
+document.addEventListener('click', function(e) {
+    const navbar = document.querySelector('.main-navbar');
+    const navbarActions = document.querySelector('.navbar-actions');
+    
+    if (!navbar.contains(e.target) && navbarActions.classList.contains('mobile-open')) {
+        navbarActions.classList.remove('mobile-open');
+    }
+    
+    // Close on link click
+    if (e.target.matches('.navbar-actions a')) {
+        navbarActions.classList.remove('mobile-open');
+    }
+});
+
 // Dropdown click handler
 document.addEventListener('click', function(e) {
     const dropdowns = document.querySelectorAll('.dropdown');

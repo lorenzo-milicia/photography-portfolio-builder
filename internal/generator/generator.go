@@ -148,12 +148,20 @@ func (g *Generator) generateIndex(projects []*content.ProjectMetadata) error {
 	if siteMeta.WebsiteName == "" {
 		siteMeta.WebsiteName = "Photography Portfolio"
 	}
+	if siteMeta.LogoPrimary == "" {
+		siteMeta.LogoPrimary = "portfolio"
+	}
+	if siteMeta.LogoSecondary == "" {
+		siteMeta.LogoSecondary = "photography"
+	}
 
 	data := map[string]interface{}{
-		"Projects":    projects,
-		"BaseURL":     g.baseURL,
-		"Copyright":   siteMeta.Copyright,
-		"WebsiteName": siteMeta.WebsiteName,
+		"Projects":      projects,
+		"BaseURL":       g.baseURL,
+		"Copyright":     siteMeta.Copyright,
+		"WebsiteName":   siteMeta.WebsiteName,
+		"LogoPrimary":   siteMeta.LogoPrimary,
+		"LogoSecondary": siteMeta.LogoSecondary,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "index.html", data); err != nil {
@@ -195,6 +203,12 @@ func (g *Generator) generateAbout() error {
 	if siteMeta.WebsiteName == "" {
 		siteMeta.WebsiteName = "Photography Portfolio"
 	}
+	if siteMeta.LogoPrimary == "" {
+		siteMeta.LogoPrimary = "portfolio"
+	}
+	if siteMeta.LogoSecondary == "" {
+		siteMeta.LogoSecondary = "photography"
+	}
 
 	// Get all projects for navigation
 	projects, err := g.contentMgr.ListProjects()
@@ -204,9 +218,12 @@ func (g *Generator) generateAbout() error {
 	}
 
 	data := map[string]interface{}{
-		"BaseURL":     g.baseURL,
-		"WebsiteName": siteMeta.WebsiteName,
-		"AllProjects": projects,
+		"BaseURL":       g.baseURL,
+		"WebsiteName":   siteMeta.WebsiteName,
+		"LogoPrimary":   siteMeta.LogoPrimary,
+		"LogoSecondary": siteMeta.LogoSecondary,
+		"AllProjects":   projects,
+		"About":         siteMeta.About,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "about.html", data); err != nil {
@@ -337,6 +354,12 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error 
 	if siteMeta.WebsiteName == "" {
 		siteMeta.WebsiteName = "Photography Portfolio"
 	}
+	if siteMeta.LogoPrimary == "" {
+		siteMeta.LogoPrimary = "portfolio"
+	}
+	if siteMeta.LogoSecondary == "" {
+		siteMeta.LogoSecondary = "photography"
+	}
 
 	data := map[string]interface{}{
 		"Project":        project,
@@ -348,6 +371,9 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error 
 		"BaseURL":        g.baseURL,
 		"AllProjects":    allProjects,
 		"WebsiteName":    siteMeta.WebsiteName,
+		"LogoPrimary":    siteMeta.LogoPrimary,
+		"LogoSecondary":  siteMeta.LogoSecondary,
+		"Copyright":      siteMeta.Copyright,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "project.html", data); err != nil {

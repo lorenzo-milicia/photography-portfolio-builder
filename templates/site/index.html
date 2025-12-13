@@ -9,52 +9,46 @@
 <body>
     {{template "navbar" .}}
     <div class="home-container">
-        <header class="home-header">
-            <div class="header-content">
-                <h1 class="home-title">Photography Portfolio</h1>
-                <p class="home-subtitle">Visual stories through the lens</p>
-            </div>
-        </header>
-
         {{if .Projects}}
-        <nav class="projects-nav">
-            <div class="projects-wrapper">
-                {{range $idx, $project := .Projects}}
-                <a href="{{$.BaseURL}}/{{$project.Slug}}/" class="project-link reveal-item">
-                    <span class="project-number">{{printf "%02d" (add $idx 1)}}</span>
-                    <div class="project-info">
-                        <h2 class="project-name">{{$project.Title}}</h2>
-                        {{if $project.Description}}
-                        <p class="project-desc">{{$project.Description}}</p>
+        <section class="projects-section reveal-item">
+            <div class="projects-content">
+                <h2 class="section-title">Projects</h2>
+                <nav class="projects-nav">
+                    <div class="projects-wrapper">
+                        {{range $idx, $project := .Projects}}
+                        <a href="{{$.BaseURL}}/{{$project.Slug}}/" class="project-link">
+                            <span class="project-number">{{printf "%02d" (add $idx 1)}}</span>
+                            <div class="project-info">
+                                <h2 class="project-name">{{$project.Title}}</h2>
+                                {{if $project.Description}}
+                                <p class="project-desc">{{$project.Description}}</p>
+                                {{end}}
+                            </div>
+                            <svg class="project-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
                         {{end}}
                     </div>
-                    <svg class="project-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
-                </a>
-                {{end}}
+                </nav>
             </div>
-        </nav>
+        </section>
         {{else}}
         <div class="empty-state">
             <p>No projects available yet.</p>
         </div>
         {{end}}
-
-        <footer class="home-footer">
-            <p>&copy; {{.Copyright}}</p>
-        </footer>
     </div>
-
+    <footer class="home-footer">
+        <p>&copy; {{.Copyright}}</p>
+    </footer>
     <script>
         // Reveal animation on load
         document.addEventListener('DOMContentLoaded', function() {
-            const items = document.querySelectorAll('.reveal-item');
-            items.forEach((item, index) => {
-                setTimeout(() => {
-                    item.classList.add('visible');
-                }, index * 100);
-            });
+            const section = document.querySelector('.reveal-item');
+            setTimeout(() => {
+                section.classList.add('visible');
+            }, 100);
         });
     </script>
 </body>

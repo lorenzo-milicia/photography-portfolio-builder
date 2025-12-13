@@ -9,26 +9,26 @@ Quick commands (from repository root):
 - Build the binary:
 
 ```bash
-just build
+go build -o bin/builder ./cmd/builder
 ```
 
 - Run the interactive builder server (local development):
 
 ```bash
-just run        # runs the VS Code task or ./bin/builder builder
+./bin/builder builder        # runs the VS Code task or ./bin/builder builder
 ```
 
 - Generate static site for production (no prefix):
 
 ```bash
-just generate-prod
+./bin/builder generate
 ```
 
 - Generate static site for preview (prefixes assets with /preview):
 
 ```bash
-````instructions
-# Project: Photography Portfolio Builder — Developer Notes
+./bin/builder generate --preview
+```
 
 Keep this file short. Always use the VS Code tasks (not manual shell commands) to build, generate and run the server — that ensures terminals are managed consistently.
 
@@ -50,7 +50,9 @@ How to use (recommended):
 5. Use `Generate Site (Production)` to produce final site files with root asset paths.
 6. Use `Serve Static Site` and open `http://localhost:8080/` to inspect `output/public`.
 
-Note: Avoid manual `just` commands — always use VS Code tasks for consistent terminal management.
+**Note**: Generally there is no need to restart the `Generate Site` task if it's already running, because it uses air for live reload. Air automatically regenerates the site when template, CSS, or content files change.
+
+Note: Avoid manual shell commands — always use VS Code tasks for consistent terminal management.
 
 ## **3. Static Site Generation**
   - Project editor  
