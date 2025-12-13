@@ -224,6 +224,7 @@ func (g *Generator) generateAbout() error {
 		"LogoSecondary": siteMeta.LogoSecondary,
 		"AllProjects":   projects,
 		"About":         siteMeta.About,
+		"Copyright":     siteMeta.Copyright,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "about.html", data); err != nil {

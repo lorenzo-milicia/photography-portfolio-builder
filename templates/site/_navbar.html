@@ -54,10 +54,7 @@ document.addEventListener('click', function(e) {
         navbarActions.classList.remove('mobile-open');
     }
     
-    // Close on link click
-    if (e.target.matches('.navbar-actions a')) {
-        navbarActions.classList.remove('mobile-open');
-    }
+    // Don't do anything when clicking on link - let natural navigation happen
 });
 
 // Dropdown click handler
