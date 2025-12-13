@@ -17,11 +17,11 @@
         <div class="about-content">
             {{if .About}}
                 {{range .About.Paragraphs}}
-                <p>{{.}}</p>
+                <p>{{nl2br .}}</p>
                 {{end}}
                 {{if .About.Quote}}
                 <blockquote class="about-quote">
-                    <p>{{.About.Quote}}</p>
+                    <p>{{nl2br .About.Quote}}</p>
                     {{if .About.QuoteSource}}
                     <cite class="quote-source">— {{.About.QuoteSource}}</cite>
                     {{end}}

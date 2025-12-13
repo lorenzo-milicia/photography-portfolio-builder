@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/content"
@@ -44,6 +45,7 @@ func (g *Generator) Generate(baseURL string) error {
 		"mul":    func(a, b float64) float64 { return a * b },
 		"le":     func(a, b int) bool { return a <= b },
 		"printf": fmt.Sprintf,
+		"nl2br":  func(s string) template.HTML { return template.HTML(strings.ReplaceAll(s, "\n", "<br>")) },
 		"sanitizeClass": func(s string) string {
 			// Replace dots and special chars with hyphens for valid CSS class names
 			result := ""

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -65,12 +66,19 @@ type About struct {
 	QuoteSource string   `yaml:"quote_source,omitempty"`
 }
 
+// ProjectOrder defines the order of projects in the UI
+type ProjectOrder struct {
+	Slug  string `yaml:"slug"`
+	Order int    `yaml:"order"`
+}
+
 type SiteMetadata struct {
-	Copyright     string `yaml:"copyright"`
-	WebsiteName   string `yaml:"website_name"`
-	LogoPrimary   string `yaml:"logo_primary"`
-	LogoSecondary string `yaml:"logo_secondary"`
-	About         *About `yaml:"about,omitempty"`
+	Copyright     string         `yaml:"copyright"`
+	WebsiteName   string         `yaml:"website_name"`
+	LogoPrimary   string         `yaml:"logo_primary"`
+	LogoSecondary string         `yaml:"logo_secondary"`
+	About         *About         `yaml:"about,omitempty"`
+	Projects      []ProjectOrder `yaml:"projects,omitempty"`
 }
 
 // SiteMetaPath returns the path to the site-level metadata YAML file
@@ -244,6 +252,38 @@ func (m *Manager) ListProjects() ([]*ProjectMetadata, error) {
 		}
 		projects = append(projects, meta)
 	}
+
+	// Load site metadata for project order
+	siteMeta, err := m.LoadSiteMeta()
+	if err != nil {
+		// If failed to load, sort by title
+		sort.Slice(projects, func(i, j int) bool {
+			return projects[i].Title < projects[j].Title
+		})
+		return projects, nil
+	}
+
+	// Create order map
+	orderMap := make(map[string]int)
+	for _, po := range siteMeta.Projects {
+		orderMap[po.Slug] = po.Order
+	}
+
+	// Sort projects by order from site.yaml, then by title
+	sort.Slice(projects, func(i, j int) bool {
+		oi := orderMap[projects[i].Slug]
+		if oi == 0 {
+			oi = 999
+		}
+		oj := orderMap[projects[j].Slug]
+		if oj == 0 {
+			oj = 999
+		}
+		if oi != oj {
+			return oi < oj
+		}
+		return projects[i].Title < projects[j].Title
+	})
 
 	return projects, nil
 }
