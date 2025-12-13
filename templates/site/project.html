@@ -6,18 +6,35 @@
     <title>{{.Project.Title}} - Photography Portfolio</title>
     <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
     <style>
+        .gallery-wrapper {
+            width: 100%;
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat({{.Layout.GridWidth}}, 1fr);
-            grid-auto-rows: minmax(100px, auto);
             gap: 1rem;
-            max-width: 1400px;
-            margin: 2rem auto;
+            width: 100%;
+        }
+        
+        /* Responsive row height based on viewport/container width */
+        .gallery-grid {
+            /* For screens wider than 1400px + padding */
+            grid-auto-rows: calc((1400px - ({{sub .Layout.GridWidth 1}} * 1rem)) / {{.Layout.GridWidth}});
+        }
+        
+        @media (max-width: 1432px) {
+            .gallery-grid {
+                /* Dynamically size rows: (viewport width - padding - gaps) / columns */
+                grid-auto-rows: calc((100vw - 2rem - ({{sub .Layout.GridWidth 1}} * 1rem)) / {{.Layout.GridWidth}});
+            }
         }
         
         .gallery-item {
             position: relative;
-            overflow: hidden;
             background: #f5f5f5;
         }
         
@@ -25,7 +42,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: block;
         }
         
         /* Desktop grid positioning */
@@ -43,10 +59,15 @@
         @media (max-width: 768px) {
             {{if .Layout.HasMobileLayout}}
             /* Custom mobile grid layout */
+            .gallery-wrapper {
+                padding: 0 0.5rem;
+            }
+            
             .gallery-grid {
                 grid-template-columns: repeat({{.Layout.MobileGridWidth}}, 1fr);
                 gap: 0.5rem;
-                padding: 0 0.5rem 2rem;
+                /* Responsive row height: (viewport width - padding - gaps) / columns */
+                grid-auto-rows: calc((100vw - 1rem - ({{sub .Layout.MobileGridWidth 1}} * 0.5rem)) / {{.Layout.MobileGridWidth}});
             }
             
             /* Mobile grid positioning */
@@ -60,14 +81,20 @@
             {{end}}
             {{end}}
             {{else}}
-            /* Default mobile: use object-fit contain to prevent cropping */
+            /* Default mobile: single column, maintain aspect ratio */
+            .gallery-wrapper {
+                padding: 0 0.5rem;
+            }
+            
             .gallery-grid {
+                grid-template-columns: 1fr;
                 gap: 0.5rem;
-                padding: 0 0.5rem 2rem;
+                grid-auto-rows: auto;
             }
             
             .gallery-item img {
                 object-fit: contain;
+                position: relative;
             }
             {{end}}
         }
@@ -89,8 +116,9 @@
         </header>
 
         {{if .Layout.Placements}}
-        <div class="gallery-grid">
-            {{range $idx, $placement := .Layout.Placements}}
+        <div class="gallery-wrapper">
+            <div class="gallery-grid">
+                {{range $idx, $placement := .Layout.Placements}}
             {{$photo := index $.PhotoMap $placement.Filename}}
             {{$originalPlacement := index $.OriginalLayout.Placements $idx}}
             {{$variants := index $.VariantsMap $originalPlacement.Filename}}
@@ -102,8 +130,9 @@
                      alt="Photo {{add $idx 1}}"
                      {{if lt $idx 6}}loading="eager"{{else}}loading="lazy"{{end}}>
             </div>
-            {{end}}
-            {{end}}
+                {{end}}
+                {{end}}
+            </div>
         </div>
         {{else}}
         <p class="empty-state">No photos placed in the layout yet.</p>
