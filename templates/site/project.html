@@ -21,15 +21,10 @@
         }
         
         /* Responsive row height based on viewport/container width */
-        .gallery-grid {
-            /* For screens wider than 1400px + padding */
-            grid-auto-rows: calc((1400px - ({{sub .Layout.GridWidth 1}} * 1rem)) / {{.Layout.GridWidth}});
-        }
-        
-        @media (max-width: 1432px) {
+        @media (min-width: 769px) {
             .gallery-grid {
-                /* Dynamically size rows: (viewport width - padding - gaps) / columns */
-                grid-auto-rows: calc((100vw - 2rem - ({{sub .Layout.GridWidth 1}} * 1rem)) / {{.Layout.GridWidth}});
+                /* For screens wider than 1400px + padding */
+                grid-auto-rows: calc(min(1400px, 100vw - 2rem) / {{.Layout.GridWidth}} - ({{sub .Layout.GridWidth 1}} * 1rem / {{.Layout.GridWidth}}));
             }
         }
         
@@ -66,6 +61,7 @@
             /* Custom mobile grid layout */
             .gallery-wrapper {
                 padding: 0 0.5rem;
+                margin: 1rem auto;
             }
             
             .gallery-grid {
@@ -97,6 +93,8 @@
             /* Default mobile: single column, maintain aspect ratio */
             .gallery-wrapper {
                 padding: 0 0.5rem;
+                margin: 1rem auto;
+            }
             }
             
             .gallery-grid {

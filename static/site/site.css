@@ -786,15 +786,7 @@ footer {
 }
 
 /* Responsive Design */
-@media (max-width: 1024px) and (orientation: portrait) {
-
-    /* Tablet portrait: use simplified grid for better image display */
-    .gallery-grid {
-        grid-template-columns: repeat(6, 1fr) !important;
-    }
-}
-
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
     .container {
         padding: 2rem 1.5rem;
     }
@@ -837,9 +829,7 @@ footer {
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 1rem;
     }
-}
 
-@media (max-width: 768px) {
     .container {
         padding: 1.5rem 1rem;
     }
@@ -1041,11 +1031,22 @@ footer {
     }
 
     .project-header {
-        padding: 3rem 1rem 2rem;
+        /* reduce top padding on mobile to tighten spacing above title */
+        padding: 0.25rem 1rem 1rem;
     }
 
     .header-content {
         padding: 0 1rem;
+        margin-top: 0;
+    }
+
+    /* Reduce the generic header bottom spacing on mobile so title sits closer */
+    header {
+        margin-bottom: 0.5rem;
+    }
+
+    .project-title {
+        margin-top: 0;
     }
 
     .gallery-grid {
@@ -1348,4 +1349,35 @@ footer {
     letter-spacing: 0.02em;
     text-transform: uppercase;
     background: transparent;
+}
+
+/* Final mobile overrides (placed at file end to ensure precedence) */
+@media (max-width: 768px) {
+    /* Slightly more breathing room: keep a small top padding and add bottom padding */
+    .project-header {
+        padding: 2rem 1rem 3rem !important;
+    }
+
+    .header-content {
+        padding: 0 1rem !important;
+        margin-top: 0 !important;
+    }
+
+    .project-title {
+        margin-top: 0 !important;
+    }
+
+    /* Reduce the body top offset for mobile so content sits closer under navbar */
+    body {
+        padding-top: 64px !important;
+    }
+    
+    /* Give the About page title more breathing room from the content below */
+    .about-content {
+        margin-top: 3rem !important;
+    }
+
+    .page-header {
+        padding-top: 2rem !important;
+    }
 }
