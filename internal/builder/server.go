@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -18,15 +19,15 @@ import (
 // Server represents the builder HTTP server
 type Server struct {
 	templates  *template.Template
-	staticDir  string
+	staticFS   fs.FS
 	contentMgr *content.Manager
 	generator  *generator.Generator
 	outputDir  string
 }
 
 // NewServer creates a new builder server
-func NewServer(templatesDir, staticDir, contentDir, outputDir string) (*Server, error) {
-	log.Debug().Str("templatesDir", templatesDir).Msg("Loading templates")
+func NewServer(templatesFS, staticFS fs.FS, contentDir, outputDir string) (*Server, error) {
+	log.Debug().Msg("Loading templates")
 
 	// Create template function map
 	funcMap := template.FuncMap{
@@ -41,8 +42,7 @@ func NewServer(templatesDir, staticDir, contentDir, outputDir string) (*Server, 
 	}
 
 	// Parse templates
-	builderTemplates := filepath.Join(templatesDir, "builder", "*.html")
-	tmpl, err := template.New("").Funcs(funcMap).ParseGlob(builderTemplates)
+	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templatesFS, "templates/builder/*.html")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse templates: %w", err)
 	}
@@ -50,11 +50,11 @@ func NewServer(templatesDir, staticDir, contentDir, outputDir string) (*Server, 
 	log.Info().Int("templates", len(tmpl.Templates())).Msg("Templates loaded")
 
 	contentMgr := content.NewManager(contentDir)
-	gen := generator.NewGenerator(contentDir, outputDir, templatesDir)
+	gen := generator.NewGenerator(contentDir, outputDir, templatesFS, staticFS)
 
 	return &Server{
 		templates:  tmpl,
-		staticDir:  staticDir,
+		staticFS:   staticFS,
 		contentMgr: contentMgr,
 		generator:  gen,
 		outputDir:  outputDir,
@@ -64,8 +64,9 @@ func NewServer(templatesDir, staticDir, contentDir, outputDir string) (*Server, 
 // RegisterRoutes registers all HTTP routes
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	// Serve static files for builder
+	subFS, _ := fs.Sub(s.staticFS, "static/builder")
 	mux.Handle("/static/builder/", http.StripPrefix("/static/builder/",
-		http.FileServer(http.Dir(filepath.Join(s.staticDir, "builder")))))
+		http.FileServer(http.FS(subFS))))
 
 	// Serve content files (photos)
 	mux.Handle("/content/", http.StripPrefix("/content/",

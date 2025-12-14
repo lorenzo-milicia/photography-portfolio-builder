@@ -93,9 +93,15 @@ func (m *Manager) LoadSiteMeta() (*SiteMetadata, error) {
 	var meta SiteMetadata
 	if err := util.LoadYAML(m.SiteMetaPath(), &meta); err != nil {
 		if os.IsNotExist(err) {
+			// Initialize defaults for new sites
+			meta.About = &About{}
 			return &meta, nil
 		}
 		return nil, err
+	}
+	// Ensure About is initialized even if loaded from YAML
+	if meta.About == nil {
+		meta.About = &About{}
 	}
 	return &meta, nil
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"go.lorenzomilicia.dev/photography-portfolio-builder/assets"
 	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/builder"
 	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/generator"
 )
@@ -79,14 +80,12 @@ func runBuilder() {
 	log.Debug().Str("workDir", workDir).Msg("Working directory")
 
 	// Setup paths
-	templatesDir := filepath.Join(workDir, "templates")
-	staticDir := filepath.Join(workDir, "static")
 	contentDir := filepath.Join(workDir, "content")
 	outputDir := filepath.Join(workDir, "output")
 
 	// Create builder server
 	log.Info().Msg("Initializing server")
-	srv, err := builder.NewServer(templatesDir, staticDir, contentDir, outputDir)
+	srv, err := builder.NewServer(assets.TemplatesFS, assets.StaticFS, contentDir, outputDir)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create server")
 	}
@@ -112,7 +111,6 @@ func runGenerate() {
 	baseURL := fs.String("base-url", "", "Base URL for the site (e.g., '' for root or '/preview' for local preview)")
 	outputDir := fs.String("output", "output", "Output directory for generated site")
 	contentDir := fs.String("content", "content", "Content directory")
-	templatesDir := fs.String("templates", "templates", "Templates directory")
 	debug := fs.Bool("debug", false, "Enable debug logging")
 	fs.Parse(os.Args[2:])
 
@@ -127,7 +125,6 @@ func runGenerate() {
 
 	absContentDir := filepath.Join(workDir, *contentDir)
 	absOutputDir := filepath.Join(workDir, *outputDir)
-	absTemplatesDir := filepath.Join(workDir, *templatesDir)
 
 	log.Info().
 		Str("contentDir", absContentDir).
@@ -136,7 +133,7 @@ func runGenerate() {
 		Msg("Generation settings")
 
 	// Create generator
-	gen := generator.NewGenerator(absContentDir, absOutputDir, absTemplatesDir)
+	gen := generator.NewGenerator(absContentDir, absOutputDir, assets.TemplatesFS, assets.StaticFS)
 
 	// Generate site
 	if err := gen.Generate(*baseURL); err != nil {

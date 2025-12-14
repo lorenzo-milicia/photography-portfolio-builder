@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	"html/template"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,19 +18,21 @@ type Generator struct {
 	contentMgr     *content.Manager
 	imageProcessor *images.Processor
 	outputDir      string
-	templatesDir   string
+	templatesFS    fs.FS
+	staticFS       fs.FS
 	templates      *template.Template
 	baseURL        string
 }
 
 // NewGenerator creates a new site generator
-func NewGenerator(contentDir, outputDir, templatesDir string) *Generator {
+func NewGenerator(contentDir, outputDir string, templatesFS, staticFS fs.FS) *Generator {
 	cacheDir := filepath.Join(outputDir, ".cache")
 	return &Generator{
 		contentMgr:     content.NewManager(contentDir),
 		imageProcessor: images.NewProcessor(cacheDir),
 		outputDir:      outputDir,
-		templatesDir:   templatesDir,
+		templatesFS:    templatesFS,
+		staticFS:       staticFS,
 	}
 }
 
@@ -72,8 +75,7 @@ func (g *Generator) Generate(baseURL string) error {
 	}
 
 	// Load site templates
-	siteTemplates := filepath.Join(g.templatesDir, "site", "*.html")
-	tmpl, err := template.New("").Funcs(funcMap).ParseGlob(siteTemplates)
+	tmpl, err := template.New("").Funcs(funcMap).ParseFS(g.templatesFS, "templates/site/*.html")
 	if err != nil {
 		return fmt.Errorf("failed to parse site templates: %w", err)
 	}
@@ -522,21 +524,19 @@ func (g *Generator) copyStaticAssets() error {
 		return fmt.Errorf("failed to create css directory: %w", err)
 	}
 
-	// Copy site CSS from repo static/site/site.css into the generated output
+	// Copy site CSS from embedded static/site/site.css into the generated output
 	cssPath := filepath.Join(cssDir, "site.css")
-	// static directory is located next to templatesDir (workDir/static/site/site.css)
-	sourceCSS := filepath.Join(filepath.Dir(g.templatesDir), "static", "site", "site.css")
-	if _, err := os.Stat(sourceCSS); err == nil {
-		if err := copyFile(sourceCSS, cssPath); err != nil {
-			return fmt.Errorf("failed to copy site CSS: %w", err)
-		}
-		log.Debug().Str("source", sourceCSS).Str("dest", cssPath).Msg("Copied site CSS")
-	} else {
+	cssData, err := fs.ReadFile(g.staticFS, "static/site/site.css")
+	if err != nil {
 		// Fallback: write an empty placeholder CSS to avoid missing file
 		if err := os.WriteFile(cssPath, []byte("/* site.css missing - please add static/site/site.css */"), 0644); err != nil {
 			return fmt.Errorf("failed to write placeholder CSS: %w", err)
 		}
-		log.Warn().Str("expected", sourceCSS).Msg("site.css not found; wrote placeholder")
+	} else {
+		if err := os.WriteFile(cssPath, cssData, 0644); err != nil {
+			return fmt.Errorf("failed to write site CSS: %w", err)
+		}
+		log.Debug().Str("dest", cssPath).Msg("Copied site CSS")
 	}
 
 	return nil

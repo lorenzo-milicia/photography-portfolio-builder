@@ -172,32 +172,60 @@
         <p>&copy; {{.Copyright}}</p>
     </footer>
     <script>
-        // Intersection Observer for smooth scroll-triggered photo reveals
-        if ('IntersectionObserver' in window) {
-            const observerOptions = {
-                root: null,
-                rootMargin: '50px 0px 50px 0px', // Trigger when entering viewport
-                threshold: 0
-            };
+        // Wait for images to load before revealing them to prevent flickering
+        function setupRevealObserver() {
+            if ('IntersectionObserver' in window) {
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '50px 0px 50px 0px', // Trigger when entering viewport
+                    threshold: 0
+                };
 
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                        observer.unobserve(entry.target); // Only animate once
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const item = entry.target;
+                            const img = item.querySelector('img');
+                            
+                            // Only reveal after image has loaded
+                            if (img && !img.complete) {
+                                img.addEventListener('load', () => {
+                                    item.classList.add('visible');
+                                }, { once: true });
+                            } else {
+                                // Image already loaded or no image
+                                item.classList.add('visible');
+                            }
+                            
+                            observer.unobserve(item); // Only animate once
+                        }
+                    });
+                }, observerOptions);
+
+                // Observe all gallery items
+                document.querySelectorAll('.reveal-on-scroll').forEach(item => {
+                    observer.observe(item);
+                });
+            } else {
+                // Fallback for browsers without IntersectionObserver
+                document.querySelectorAll('.reveal-on-scroll').forEach(item => {
+                    const img = item.querySelector('img');
+                    if (img && !img.complete) {
+                        img.addEventListener('load', () => {
+                            item.classList.add('visible');
+                        }, { once: true });
+                    } else {
+                        item.classList.add('visible');
                     }
                 });
-            }, observerOptions);
+            }
+        }
 
-            // Observe all gallery items
-            document.querySelectorAll('.reveal-on-scroll').forEach(item => {
-                observer.observe(item);
-            });
+        // Start observing after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupRevealObserver);
         } else {
-            // Fallback for browsers without IntersectionObserver
-            document.querySelectorAll('.reveal-on-scroll').forEach(item => {
-                item.classList.add('visible');
-            });
+            setupRevealObserver();
         }
     </script>
 </body>
