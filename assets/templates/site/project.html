@@ -70,22 +70,35 @@
                 grid-auto-rows: calc((100vw - 1rem - ({{sub .Layout.MobileGridWidth 1}} * 0.5rem)) / {{.Layout.MobileGridWidth}});
             }
             
+            /* Override for items with custom aspect ratios */
+            .mobile-only {
+                height: auto;
+            }
+            
             /* Hide desktop-only photos on mobile */
             .desktop-only {
                 display: none;
+            }
+            
+            /* Show mobile-only photos */
+            .mobile-only {
+                display: block;
+            }
+            
+            /* Use contain for mobile to prevent cropping */
+            .mobile-only img {
+                object-fit: contain;
             }
             
             /* Mobile grid positioning */
             {{range $idx, $placement := .Layout.MobilePlacements}}
             {{$photo := index $.PhotoMap $placement.Filename}}
             {{if $photo}}
-            {{$cellWidth := sub $placement.Position.BottomRightX $placement.Position.TopLeftX}}
-            {{$cellHeight := sub $placement.Position.BottomRightY $placement.Position.TopLeftY}}
             .photo-mobile-{{$idx}}-{{sanitizeClass $placement.Filename}} {
                 display: block;
                 grid-column: {{$placement.Position.TopLeftX}} / {{add $placement.Position.BottomRightX 1}};
                 grid-row: {{$placement.Position.TopLeftY}} / {{add $placement.Position.BottomRightY 1}};
-                aspect-ratio: {{$cellWidth}} / {{$cellHeight}};
+                aspect-ratio: {{$photo.RatioWidth}} / {{$photo.RatioHeight}};
             }
             {{end}}
             {{end}}
