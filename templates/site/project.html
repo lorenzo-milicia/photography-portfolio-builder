@@ -71,7 +71,6 @@
             .gallery-grid {
                 grid-template-columns: repeat({{.Layout.MobileGridWidth}}, 1fr);
                 gap: 0.5rem;
-                /* Responsive row height: (viewport width - padding - gaps) / columns */
                 grid-auto-rows: calc((100vw - 1rem - ({{sub .Layout.MobileGridWidth 1}} * 0.5rem)) / {{.Layout.MobileGridWidth}});
             }
             
@@ -84,10 +83,13 @@
             {{range $idx, $placement := .Layout.MobilePlacements}}
             {{$photo := index $.PhotoMap $placement.Filename}}
             {{if $photo}}
+            {{$cellWidth := sub $placement.Position.BottomRightX $placement.Position.TopLeftX}}
+            {{$cellHeight := sub $placement.Position.BottomRightY $placement.Position.TopLeftY}}
             .photo-mobile-{{$idx}}-{{sanitizeClass $placement.Filename}} {
                 display: block;
                 grid-column: {{$placement.Position.TopLeftX}} / {{add $placement.Position.BottomRightX 1}};
                 grid-row: {{$placement.Position.TopLeftY}} / {{add $placement.Position.BottomRightY 1}};
+                aspect-ratio: {{$cellWidth}} / {{$cellHeight}};
             }
             {{end}}
             {{end}}
