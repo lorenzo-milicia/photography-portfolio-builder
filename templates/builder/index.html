@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,10 +8,11 @@
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <link rel="stylesheet" href="/static/builder/style.css">
 </head>
+
 <body>
     <aside class="sidebar">
         <h1>📷 Portfolio Builder</h1>
-        
+
         <button class="btn" hx-get="/project/new" hx-target="#main-content" hx-swap="innerHTML">
             + New Project
         </button>
@@ -20,23 +22,89 @@
             Loading projects...
         </div>
 
+        <h2>Settings</h2>
+        <div class="project-list">
+            <a href="#" class="project-link" hx-get="/config" hx-target="#main-content" hx-push-url="true">
+                ⚙️ Site Configuration
+            </a>
+        </div>
+
         <div class="generate-section">
-            <button class="btn btn-success" hx-post="/api/generate" hx-target="#generate-result">
+            <button class="btn btn-success" id="generate-btn" hx-post="/api/generate" hx-swap="none"
+                hx-disabled-elt="this" hx-indicator="#generate-spinner"
+                style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                 🚀 Generate Site
+                <svg id="generate-spinner" class="spinner-icon htmx-indicator" xmlns="http://www.w3.org/2000/svg"
+                    fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+                        style="opacity: 0.3"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                </svg>
             </button>
-            <div id="generate-result" style="margin-top: 1rem; font-size: 0.9rem;"></div>
+            <a href="/preview/" target="_blank" id="preview-btn" class="btn" disabled>
+                👁️ View Preview
+            </a>
         </div>
     </aside>
 
     <main class="main-content" id="main-content">
         {{if .Content}}
-            {{.Content}}
+        {{.Content}}
         {{else}}
-            <div class="welcome">
-                <h2>Welcome to Portfolio Builder</h2>
-                <p>Create a new project to get started, or select an existing one from the sidebar.</p>
-            </div>
+        <div class="welcome">
+            <h2>Welcome to Portfolio Builder</h2>
+            <p>Create a new project to get started, or select an existing one from the sidebar.</p>
+        </div>
         {{end}}
     </main>
+
+    <div id="toast-container"></div>
+
+    <script>
+        // Handle Toast Notifications from Server Events
+        document.body.addEventListener('showMessage', function (evt) {
+            const data = evt.detail;
+            showToast(data.message, data.type);
+        });
+
+        // Handle Enable Preview Event
+        document.body.addEventListener('enablePreview', function (evt) {
+            const btn = document.getElementById('preview-btn');
+            btn.classList.add('enabled');
+            btn.removeAttribute('disabled');
+        });
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+
+            toast.innerHTML = `
+                <span class="icon">${icon}</span>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // Auto dismiss
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(20px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Handle visual disabled state click prevention
+        document.getElementById('preview-btn').addEventListener('click', function (e) {
+            if (!this.classList.contains('enabled')) {
+                e.preventDefault();
+            }
+        });
+    </script>
 </body>
+
 </html>

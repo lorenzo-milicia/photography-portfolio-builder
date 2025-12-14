@@ -7,6 +7,8 @@ import (
 	"html/template"
 	"net/http"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/content"
@@ -26,9 +28,21 @@ type Server struct {
 func NewServer(templatesDir, staticDir, contentDir, outputDir string) (*Server, error) {
 	log.Debug().Str("templatesDir", templatesDir).Msg("Loading templates")
 
+	// Create template function map
+	funcMap := template.FuncMap{
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"join": strings.Join,
+		"json": func(v interface{}) template.JS {
+			a, _ := json.Marshal(v)
+			return template.JS(a)
+		},
+	}
+
 	// Parse templates
 	builderTemplates := filepath.Join(templatesDir, "builder", "*.html")
-	tmpl, err := template.ParseGlob(builderTemplates)
+	tmpl, err := template.New("").Funcs(funcMap).ParseGlob(builderTemplates)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse templates: %w", err)
 	}
@@ -69,12 +83,14 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/project/layout/get", s.handleLayoutGet)
 	mux.HandleFunc("/api/project/layout/update", s.handleLayoutUpdate)
 	mux.HandleFunc("/api/generate", s.handleGenerate)
+	mux.HandleFunc("/api/config/update", s.handleConfigUpdate)
 
 	// Builder UI routes
 	mux.HandleFunc("/projects", s.handleProjectList)
 	mux.HandleFunc("/project/new", s.handleProjectNew)
 	mux.HandleFunc("/project/", s.handleProjectView)
 	mux.HandleFunc("/layout/", s.handleLayoutEditor)
+	mux.HandleFunc("/config", s.handleConfigView)
 
 	// Catch-all: serve index for any unmatched route (SPA-like behavior)
 	mux.HandleFunc("/", s.handleIndex)
@@ -250,7 +266,18 @@ func (s *Server) handleProjectCreate(w http.ResponseWriter, r *http.Request) {
 	project, err := s.contentMgr.CreateProject(title, description)
 	if err != nil {
 		log.Error().Err(err).Str("title", title).Msg("Failed to create project")
-		http.Error(w, fmt.Sprintf("Failed to create project: %v", err), http.StatusInternalServerError)
+		// Return 200 OK even on error so htmx renders the content, or use hx-swap-oob.
+		// For simplicity, we stick to 200 here but usually htmx handles non-200 by not swapping unless configured.
+		// We'll return 500 but if we want htmx to show it, we might need configuration.
+		// Actually, htmx *does* sway by default on 200. On 500 it might stop.
+		// Safer to return 200 with error message for this simple UI, or keep 500 and handle htmx errors.
+		// Given "keep things simple", let's return a styled error div with 200 or just 500 and let htmx swap (if configured).
+		// Standard htmx doesn't swap on error codes. Let's return 200 OK with the error message.
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `<div class="result-alert error">
+			<span>❌</span>
+			<div>Failed to create project: %v</div>
+		</div>`, err)
 		return
 	}
 
@@ -276,13 +303,14 @@ func (s *Server) handleProjectUpdate(w http.ResponseWriter, r *http.Request) {
 	slug := r.FormValue("slug")
 	title := r.FormValue("title")
 	description := r.FormValue("description")
+	hidden := r.FormValue("hidden") == "on"
 
 	if slug == "" || title == "" {
 		http.Error(w, "Slug and title are required", http.StatusBadRequest)
 		return
 	}
 
-	if err := s.contentMgr.UpdateProject(slug, title, description); err != nil {
+	if err := s.contentMgr.UpdateProject(slug, title, description, hidden); err != nil {
 		log.Printf("Error updating project: %v", err)
 		http.Error(w, "Failed to update project", http.StatusInternalServerError)
 		return
@@ -423,12 +451,178 @@ func (s *Server) handleGenerate(w http.ResponseWriter, r *http.Request) {
 	// Generate with /preview base URL for local preview
 	if err := s.generator.Generate("/preview"); err != nil {
 		log.Error().Err(err).Msg("Site generation failed")
-		http.Error(w, fmt.Sprintf("Failed to generate site: %v", err), http.StatusInternalServerError)
+
+		// Send error toast trigger
+		events := map[string]interface{}{
+			"showMessage": map[string]string{
+				"type":    "error",
+				"message": fmt.Sprintf("Failed to generate site: %v", err),
+			},
+		}
+
+		eventJSON, _ := json.Marshal(events)
+		w.Header().Set("HX-Trigger", string(eventJSON))
+		w.WriteHeader(http.StatusOK) // 200 OK so client processes events
 		return
 	}
 
 	log.Info().Msg("Site generated successfully")
 
+	// Send success toast trigger + enable preview trigger
+	events := map[string]interface{}{
+		"showMessage": map[string]string{
+			"type":    "success",
+			"message": "Site generated successfully!",
+		},
+		"enablePreview": true,
+	}
+
+	eventJSON, _ := json.Marshal(events)
+	w.Header().Set("HX-Trigger", string(eventJSON))
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Site generated successfully! <a href='/preview/' target='_blank'>View Preview</a>")
+}
+
+// handleConfigView renders the site configuration editor
+func (s *Server) handleConfigView(w http.ResponseWriter, r *http.Request) {
+	meta, err := s.contentMgr.LoadSiteMeta()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to load site config")
+		http.Error(w, "Failed to load site configuration", http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch all projects for the order list
+	projects, err := s.contentMgr.ListProjects()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to list projects")
+		// Continue with empty projects if listing fails
+		projects = []*content.ProjectMetadata{}
+	}
+
+	data := map[string]interface{}{
+		"Meta":     meta,
+		"Projects": projects,
+	}
+
+	// If this is not an htmx request (direct navigation), return full page with content
+	if r.Header.Get("HX-Request") == "" {
+		// Create a buffer to render the config editor
+		var buf bytes.Buffer
+		if err := s.templates.ExecuteTemplate(&buf, "config-editor.html", data); err != nil {
+			log.Error().Err(err).Msg("Template execution failed")
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		// Wrap it in the full page layout
+		pageData := map[string]interface{}{
+			"Content":  template.HTML(buf.String()),
+			"Projects": projects, // Pass projects for sidebar
+		}
+		if err := s.templates.ExecuteTemplate(w, "index.html", pageData); err != nil {
+			log.Error().Err(err).Msg("Template execution failed")
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if err := s.templates.ExecuteTemplate(w, "config-editor.html", data); err != nil {
+		log.Error().Err(err).Msg("Template execution failed")
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+// handleConfigUpdate updates the site configuration
+func (s *Server) handleConfigUpdate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	meta, err := s.contentMgr.LoadSiteMeta()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to load site config")
+		http.Error(w, "Failed to load site configuration", http.StatusInternalServerError)
+		return
+	}
+
+	// Basic Settings
+	meta.WebsiteName = r.FormValue("website_name")
+	meta.Copyright = r.FormValue("copyright")
+	meta.LogoPrimary = r.FormValue("logo_primary")
+	meta.LogoSecondary = r.FormValue("logo_secondary")
+
+	// About Section
+	if meta.About == nil {
+		meta.About = &content.About{}
+	}
+	meta.About.Title = r.FormValue("about_title")
+	meta.About.Quote = r.FormValue("about_quote")
+	meta.About.QuoteSource = r.FormValue("about_quote_source")
+
+	// Parse/Split paragraphs
+	paragraphsRaw := r.FormValue("about_paragraphs")
+	var paragraphs []string
+	if paragraphsRaw != "" {
+		// Normalize line endings
+		paragraphsRaw = strings.ReplaceAll(paragraphsRaw, ("\r\n"), "\n")
+		// Split by double newline to separate paragraphs
+		for _, para := range strings.Split(paragraphsRaw, "\n\n") {
+			para = strings.TrimSpace(para)
+			if para != "" {
+				paragraphs = append(paragraphs, para)
+			}
+		}
+	}
+	meta.About.Paragraphs = paragraphs
+
+	// Project Order
+	var projectOrders []content.ProjectOrder
+	for key, values := range r.Form {
+		if strings.HasPrefix(key, "order_") && len(values) > 0 {
+			slug := strings.TrimPrefix(key, "order_")
+			orderVal := values[0]
+			if order, err := strconv.Atoi(orderVal); err == nil {
+				projectOrders = append(projectOrders, content.ProjectOrder{
+					Slug:  slug,
+					Order: order,
+				})
+			}
+		}
+	}
+	// Only update if we found some orders (or if the form was intended to clear them,
+	// but usually we always send them. If projectOrders is nil, it clears.
+	// But let's assume if there are keys, we renew the list.)
+	// Actually, careful: if we don't send any (e.g. no projects), it becomes empty. Correct.
+	meta.Projects = projectOrders
+
+	if err := s.contentMgr.SaveSiteMeta(meta); err != nil {
+		log.Error().Err(err).Msg("Failed to save site config")
+
+		events := map[string]interface{}{
+			"showMessage": map[string]string{
+				"type":    "error",
+				"message": fmt.Sprintf("Failed to update config: %v", err),
+			},
+		}
+		eventJSON, _ := json.Marshal(events)
+		w.Header().Set("HX-Trigger", string(eventJSON))
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	events := map[string]interface{}{
+		"showMessage": map[string]string{
+			"type":    "success",
+			"message": "Configuration updated successfully!",
+		},
+	}
+	eventJSON, _ := json.Marshal(events)
+	w.Header().Set("HX-Trigger", string(eventJSON))
+	w.WriteHeader(http.StatusOK)
 }

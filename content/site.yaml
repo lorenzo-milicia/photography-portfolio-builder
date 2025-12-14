@@ -1,22 +1,22 @@
-copyright: "2025 Lorenzo Milicia. All rights reserved."
-website_name: "lorenzo milicia · photography"
-logo_primary: "lorenzo milicia"
-logo_secondary: "photography"
-projects:
-  - slug: anonime
-    order: 1
-  - slug: vietato-sedersi
-    order: 2
-  - slug: fiorino
-    order: 3
+copyright: 2025 Lorenzo Milicia. All rights reserved.
+website_name: Lorenzo Milicia - Photography
+logo_primary: lorenzo milicia
+logo_secondary: photography
 about:
-  title: "About Me"
-  paragraphs:
-    - | 
-      Hello!
-      I am Lorenzo, an Italian software developer based in Germany. I developed the hobby of photography, and I just have fun bringing one of my cameras around and snapping some photos.
-    - "Nowadays, I mostly shoot with my film cameras, the Nikon FM being my favourite that I own."
-    - "On this self build, vibe coded website you'll find some arrangements of photos that I put together as projects."
-    - "I hope you will enjoy browsing through my work, and maybe get some inspiration for your own photography project."
-  quote: "Disposable cameras are fun, although it does seem wasteful and you don’t ever get to see your pictures. If it’s an important event, that you want to remember, I recommend using a real camera."
-  quote_source: "Erin Hannon"
+    title: About Me
+    paragraphs:
+        - |-
+          Hello!
+          I am Lorenzo, an Italian software developer based in Germany. I developed the hobby of photography, and I just have fun bringing one of my cameras around and snapping some photos.
+        - Nowadays, I mostly shoot with my film cameras, the Nikon FM being my favourite that I own.
+        - On this self build, vibe coded website you'll find some arrangements of photos that I put together as projects.
+        - I hope you will enjoy browsing through my work, and maybe get some inspiration for your own photography project.
+    quote: Disposable cameras are fun, although it does seem wasteful and you don’t ever get to see your pictures. If it’s an important event, that you want to remember, I recommend using a real camera.
+    quote_source: Erin Hannon
+projects:
+    - slug: anonime
+      order: 1
+    - slug: vietato-sedersi
+      order: 2
+    - slug: fiorino
+      order: 3

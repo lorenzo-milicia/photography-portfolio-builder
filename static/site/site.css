@@ -10,12 +10,12 @@
     --bg: #ffffff;
     --bg-alt: #fafafa;
     --border: #e5e5e5;
-    
+
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
     --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
     --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
     --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.15);
-    
+
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -49,6 +49,8 @@ body {
     flex-direction: column;
     opacity: 1;
     transition: opacity 0.15s ease-out;
+    padding-top: 80px;
+    /* Account for fixed navbar */
 }
 
 /* Custom Scrollbar Styling */
@@ -88,6 +90,7 @@ body {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -246,8 +249,9 @@ body {
 
 /* Main Navigation Bar */
 .main-navbar {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
     z-index: 100;
     width: 100%;
     max-width: 100%;
@@ -306,12 +310,15 @@ body {
     gap: 0.5rem;
     flex: 1;
     overflow-x: auto;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
 }
 
 .navbar-links::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    display: none;
+    /* Chrome/Safari */
 }
 
 .navbar-link {
@@ -397,7 +404,8 @@ body {
 
 /* Mobile Menu Toggle */
 .navbar-toggle {
-    display: none; /* Hidden on desktop */
+    display: none;
+    /* Hidden on desktop */
     background: none;
     border: none;
     padding: 0.5rem;
@@ -596,7 +604,9 @@ header nav a:hover {
 }
 
 /* Typography */
-h1, h2, h3 {
+h1,
+h2,
+h3 {
     margin-bottom: 1rem;
     font-weight: 700;
     line-height: 1.2;
@@ -764,6 +774,7 @@ footer {
 
 /* Responsive Design */
 @media (max-width: 1024px) and (orientation: portrait) {
+
     /* Tablet portrait: use simplified grid for better image display */
     .gallery-grid {
         grid-template-columns: repeat(6, 1fr) !important;
@@ -774,41 +785,41 @@ footer {
     .container {
         padding: 2rem 1.5rem;
     }
-    
+
     .project-container {
         padding: 4rem 1.5rem 3rem;
     }
-    
+
     header h1 {
         font-size: 2.5rem;
     }
-    
+
     .section-title {
         font-size: 1.75rem;
     }
-    
+
     .home-container {
         padding: 3rem 1.5rem 0;
     }
-    
+
     .project-link {
         padding: 1.5rem;
         gap: 1.25rem;
     }
-    
+
     .project-name {
         font-size: 1.4rem;
     }
-    
+
     .project-title {
         font-size: 2.5rem;
     }
-    
+
     .project-list {
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 2rem;
     }
-    
+
     .gallery.grid {
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 1rem;
@@ -819,69 +830,69 @@ footer {
     .container {
         padding: 1.5rem 1rem;
     }
-    
+
     .project-container {
         padding: 0;
     }
-    
+
     /* Mobile home page improvements */
     .home-container {
         padding: 3rem 1.25rem 0;
     }
-    
+
     .projects-section {
         max-width: 100%;
     }
-    
+
     .section-title {
         font-size: 0.8rem;
         margin: 0 0 2rem 0;
         letter-spacing: 0.15em;
         opacity: 0.4;
     }
-    
+
     .project-link {
         padding: 1.5rem 0;
         gap: 1.25rem;
     }
-    
+
     .project-link:hover {
         padding-left: 0;
         padding-right: 0;
     }
-    
+
     .project-link::after {
         opacity: 0.3;
         right: 0;
     }
-    
+
     .project-link:hover::after {
         right: 0;
     }
-    
+
     .project-number {
         min-width: 2.5rem;
         font-size: 0.8125rem;
     }
-    
+
     .project-name {
         font-size: 1.125rem;
     }
-    
+
     .project-desc {
         font-size: 0.875rem;
         line-height: 1.5;
     }
-    
+
     .navbar-container {
         padding: 0.75rem 1rem;
         gap: 0.75rem;
     }
-    
+
     .navbar-logo {
         font-size: 1rem;
     }
-    
+
     /* Show hamburger menu on mobile */
     .navbar-toggle {
         display: flex;
@@ -889,7 +900,7 @@ footer {
         justify-content: center;
         z-index: 1001;
     }
-    
+
     /* Mobile dropdown menu */
     .navbar-actions {
         position: absolute;
@@ -910,13 +921,13 @@ footer {
         transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
         z-index: 1000;
     }
-    
+
     .navbar-actions.mobile-open {
         opacity: 1;
         visibility: visible;
         transform: translateY(0);
     }
-    
+
     .navbar-actions .navbar-link {
         padding: 0.75rem 1rem;
         border-radius: 6px;
@@ -927,15 +938,15 @@ footer {
         transition: background-color 0.15s ease;
         display: block;
     }
-    
+
     .navbar-actions .navbar-link:hover {
         background: var(--bg-alt);
     }
-    
+
     .navbar-actions .dropdown {
         display: block;
     }
-    
+
     .navbar-actions .dropdown-toggle {
         width: 100%;
         text-align: left;
@@ -946,11 +957,11 @@ footer {
         transition: background-color 0.15s ease;
         position: relative;
     }
-    
+
     .navbar-actions .dropdown-toggle::before {
         display: none;
     }
-    
+
     .navbar-actions .dropdown-toggle::after {
         content: '›';
         display: inline-flex;
@@ -963,19 +974,19 @@ footer {
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         transform-origin: center;
     }
-    
+
     .navbar-actions .dropdown-toggle:hover {
         background: var(--bg-alt);
     }
-    
+
     .navbar-actions .dropdown-toggle.active {
         background: var(--bg-alt);
     }
-    
+
     .navbar-actions .dropdown-toggle.active::after {
         transform: rotate(90deg);
     }
-    
+
     .navbar-actions .dropdown-menu {
         position: static;
         opacity: 1;
@@ -990,11 +1001,11 @@ footer {
         overflow: hidden;
         transition: max-height 0.25s ease;
     }
-    
+
     .navbar-actions .dropdown-menu.open {
         max-height: 300px;
     }
-    
+
     .navbar-actions .dropdown-item {
         padding: 0.625rem 1rem 0.625rem 1.5rem;
         margin: 0;
@@ -1005,90 +1016,90 @@ footer {
         display: block;
         transition: background-color 0.15s ease;
     }
-    
+
     .navbar-actions .dropdown-item:hover {
         background: var(--bg-alt);
     }
-    
+
     .navbar-actions .dropdown-item.active {
         background: transparent;
         font-weight: 600;
         color: var(--accent);
     }
-    
+
     .project-header {
         padding: 3rem 1rem 2rem;
     }
-    
+
     .header-content {
         padding: 0 1rem;
     }
-    
+
     .gallery-grid {
         padding: 0 1rem 2rem;
     }
-    
+
     header h1 {
         font-size: 2rem;
     }
-    
+
     .section-title {
         font-size: 1.5rem;
     }
-    
+
     .home-container {
         padding: 2rem 1rem 0;
     }
-    
+
     header p {
         font-size: 1rem;
     }
-    
+
     .home-title {
         font-size: 2.25rem;
     }
-    
+
     .project-link {
         padding: 1.25rem 1rem;
         gap: 1rem;
     }
-    
+
     .project-number {
         font-size: 0.9rem;
         min-width: 2rem;
     }
-    
+
     .project-name {
         font-size: 1.25rem;
     }
-    
+
     .project-desc {
         font-size: 0.9rem;
     }
-    
+
     .project-arrow {
         width: 20px;
         height: 20px;
     }
-    
+
     .project-title {
         font-size: 2rem;
     }
-    
+
     .project-subtitle {
         font-size: 1rem;
     }
-    
+
     .project-list {
         grid-template-columns: 1fr;
         gap: 1.5rem;
     }
-    
+
     .gallery.grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
-    
+
     .gallery.justified .gallery-item {
         height: 250px;
     }
@@ -1114,7 +1125,7 @@ footer {
         font-size: 0.75rem;
         min-width: 2rem;
     }
-    
+
     .project-name {
         font-size: 1.05rem;
     }
@@ -1129,11 +1140,11 @@ footer {
     .gallery-item {
         break-inside: avoid;
     }
-    
+
     .main-navbar {
         display: none;
     }
-    
+
     header nav {
         display: none;
     }
@@ -1141,6 +1152,7 @@ footer {
 
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -1195,8 +1207,8 @@ footer {
 .reveal-on-scroll {
     opacity: 0;
     transform: translateY(40px);
-    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .reveal-on-scroll.visible {
@@ -1205,12 +1217,29 @@ footer {
 }
 
 /* Stagger animation for gallery items */
-.gallery-grid .reveal-on-scroll:nth-child(1) { transition-delay: 0.05s; }
-.gallery-grid .reveal-on-scroll:nth-child(2) { transition-delay: 0.1s; }
-.gallery-grid .reveal-on-scroll:nth-child(3) { transition-delay: 0.15s; }
-.gallery-grid .reveal-on-scroll:nth-child(4) { transition-delay: 0.2s; }
-.gallery-grid .reveal-on-scroll:nth-child(5) { transition-delay: 0.25s; }
-.gallery-grid .reveal-on-scroll:nth-child(6) { transition-delay: 0.3s; }
+.gallery-grid .reveal-on-scroll:nth-child(1) {
+    transition-delay: 0.05s;
+}
+
+.gallery-grid .reveal-on-scroll:nth-child(2) {
+    transition-delay: 0.1s;
+}
+
+.gallery-grid .reveal-on-scroll:nth-child(3) {
+    transition-delay: 0.15s;
+}
+
+.gallery-grid .reveal-on-scroll:nth-child(4) {
+    transition-delay: 0.2s;
+}
+
+.gallery-grid .reveal-on-scroll:nth-child(5) {
+    transition-delay: 0.25s;
+}
+
+.gallery-grid .reveal-on-scroll:nth-child(6) {
+    transition-delay: 0.3s;
+}
 
 /* Empty State */
 .empty-state {
@@ -1294,5 +1323,3 @@ footer {
     text-transform: uppercase;
     background: transparent;
 }
-
-

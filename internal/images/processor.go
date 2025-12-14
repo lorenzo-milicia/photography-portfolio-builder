@@ -51,23 +51,81 @@ func (p *Processor) ProcessProjectImages(sourceDir, destDir string, layout *cont
 		return nil, fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
-	// Calculate optimal size for each image based on layout
-	for idx, placement := range layout.Placements {
-		sourcePath := filepath.Join(sourceDir, placement.Filename)
+	// First pass: Calculate optimization config for all images (Desktop + Mobile)
+	// Map from original filename to aggregated optimization config
+	fileConfigs := make(map[string]OptimizationConfig)
 
-		// Generate base sequential filename: 1, 2, 3, etc.
+	// Helper to merge configs
+	mergeConfig := func(filename string, placement content.PhotoPlacement, isMobile bool) {
+		currentConfig, exists := fileConfigs[filename]
+		newConfig := p.calculateOptimalSize(placement) // Note: currently this assumes standard grid logic
+
+		// If mobile, generic logic might underestimate.
+		// For now, we trust calculateOptimalSize, but ensure we take the MAX dimensions if reused.
+		if !exists {
+			fileConfigs[filename] = newConfig
+		} else {
+			// Take maximum dimensions to satisfy both layouts
+			if newConfig.MaxWidth > currentConfig.MaxWidth {
+				currentConfig.MaxWidth = newConfig.MaxWidth
+			}
+			if newConfig.MaxHeight > currentConfig.MaxHeight {
+				currentConfig.MaxHeight = newConfig.MaxHeight
+			}
+			fileConfigs[filename] = currentConfig
+		}
+	}
+
+	// Collect Desktop requirements
+	for _, placement := range layout.Placements {
+		mergeConfig(placement.Filename, placement, false)
+	}
+	// Collect Mobile requirements
+	for _, placement := range layout.MobilePlacements {
+		mergeConfig(placement.Filename, placement, true) // isMobile flag could be used for diff logic later
+	}
+
+	// Deterministic iteration order (not strictly required for correctness but good for testing)
+	// Actually, the original code used index-based filenames ("1", "2").
+	// To support disjoint sets, we need a stable mapping strategy.
+	// Let's use a stable index based on sorted presence? Or just hash?
+	// The previous logic was: `baseFilename := fmt.Sprintf("%d", idx+1)`
+	// If we change this, we change existing file URLs.
+	// To maintain backward compatibility somewhat:
+	// We can assign IDs based on order of appearance in Desktop, then append new ones from Mobile?
+
+	// Collect unique filenames in order
+	var uniqueFilenames []string
+	seen := make(map[string]bool)
+
+	// Desktop first (preserve existing order mainly)
+	for _, p := range layout.Placements {
+		if !seen[p.Filename] {
+			uniqueFilenames = append(uniqueFilenames, p.Filename)
+			seen[p.Filename] = true
+		}
+	}
+	// Mobile next
+	for _, p := range layout.MobilePlacements {
+		if !seen[p.Filename] {
+			uniqueFilenames = append(uniqueFilenames, p.Filename)
+			seen[p.Filename] = true
+		}
+	}
+
+	// Process all files
+	for idx, filename := range uniqueFilenames {
+		sourcePath := filepath.Join(sourceDir, filename)
 		baseFilename := fmt.Sprintf("%d", idx+1)
-
-		// Calculate optimal dimensions based on grid position
-		config := p.calculateOptimalSize(placement)
+		config := fileConfigs[filename]
 
 		// Generate responsive variants for this image
 		variants, err := p.generateResponsiveVariants(sourcePath, destDir, baseFilename, config)
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate variants for %s: %w", placement.Filename, err)
+			return nil, fmt.Errorf("failed to generate variants for %s: %w", filename, err)
 		}
 
-		variantsMap[placement.Filename] = variants
+		variantsMap[filename] = variants
 	}
 
 	return variantsMap, nil

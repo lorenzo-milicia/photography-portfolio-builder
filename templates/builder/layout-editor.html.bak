@@ -419,103 +419,6 @@
             color: var(--danger-dark);
             display: block;
         }
-
-        /* Row Indicators */
-        .row-indicators {
-            display: grid;
-            gap: 1px;
-            background: transparent;
-        }
-
-        .row-indicator {
-            min-height: 60px;
-            /* Matches .grid-cell */
-            width: 40px;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            color: var(--gray);
-            cursor: pointer;
-            position: relative;
-            border: 1px solid var(--gray-lighter);
-            transition: var(--transition-fast);
-        }
-
-        .row-indicator:hover,
-        .row-indicator.active {
-            background: var(--gray-lightest);
-            color: var(--dark);
-            font-weight: bold;
-            border-color: var(--gray);
-            z-index: 10;
-        }
-
-        .row-controls-popover {
-            display: none;
-            position: absolute;
-            left: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            background: white;
-            border: 1px solid var(--gray-lightest);
-            border-radius: var(--radius-sm);
-            box-shadow: var(--shadow-md);
-            z-index: 100;
-            padding: 4px;
-            margin-left: 8px;
-            flex-direction: row;
-            gap: 4px;
-        }
-
-        /* Little arrow pointing to the row */
-        .row-controls-popover::before {
-            content: '';
-            position: absolute;
-            left: -4px;
-            top: 50%;
-            transform: translateY(-50%) rotate(45deg);
-            width: 8px;
-            height: 8px;
-            background: white;
-            border-left: 1px solid var(--gray-lightest);
-            border-bottom: 1px solid var(--gray-lightest);
-        }
-
-        .row-indicator.active .row-controls-popover {
-            display: flex;
-        }
-
-        .indicator-btn {
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            color: white;
-            font-size: 1rem;
-            line-height: 1;
-        }
-
-        .btn-inc-row {
-            background: var(--success);
-        }
-
-        .btn-inc-row:hover {
-            background: var(--success-dark);
-        }
-
-        .btn-dec-row {
-            background: var(--danger);
-        }
-
-        .btn-dec-row:hover {
-            background: var(--danger-dark);
-        }
     </style>
 </head>
 
@@ -546,6 +449,18 @@
 
             <button id="clear-layout-btn" class="btn-clear-layout">🗑️ Clear Layout</button>
 
+            <div class="grid-controls"
+                style="border-top: 1px solid var(--gray-lightest); padding-top: 1rem; margin-top: 1rem;">
+                <label>Row Management</label>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="number" id="target-row" placeholder="Row #" min="1" max="100" style="width: 80px;">
+                    <button id="btn-insert-row" class="btn-add"
+                        style="background: var(--primary); width: auto; flex: 1;">+ Insert Above</button>
+                </div>
+                <button id="btn-delete-row" class="btn-add" style="background: var(--danger); width: 100%;">🗑️ Delete
+                    Row</button>
+            </div>
+
             <h3>Available Photos</h3>
             <div class="photo-list" id="photo-list">
                 {{range .Photos}}
@@ -565,13 +480,9 @@
         </div>
 
         <div class="grid-workspace">
-            <div style="position: relative; display: flex; gap: 4px; margin: 0 auto; width: fit-content;">
-                <div style="position: relative;">
-                    <div id="grid-canvas" class="grid-canvas"></div>
-                    <div id="placement-container" class="placement-container"></div>
-                </div>
-                <!-- Row Indicators -->
-                <div id="row-indicators" class="row-indicators"></div>
+            <div style="position: relative; display: inline-block; margin: 0 auto;">
+                <div id="grid-canvas" class="grid-canvas"></div>
+                <div id="placement-container" class="placement-container"></div>
             </div>
         </div>
     </div>
@@ -598,53 +509,110 @@
         let gridWidth = parseInt(document.getElementById('grid-width').value);
         let placements = [];
         let selectedIndex = -1;
-        let activeRowIndex = null; // Track open row controls
 
         // View mode state
-        // Initialize data using JSON pipe to avoid template formatting issues
-        let currentView = 'desktop';
-        let desktopGridWidth = {{.Layout.GridWidth | json}};
-        let mobileGridWidth = {{.Layout.MobileGridWidth | json}} || 6;
+        let currentView = 'desktop'; // 'desktop' or 'mobile'
+        let desktopGridWidth = {{.Layout.GridWidth }};
+        let mobileGridWidth = {{ if .Layout.MobileGridWidth }}{ {.Layout.MobileGridWidth } } { {else } } 6{ { end } };
+        let desktopPlacements = [];
+        let mobilePlacements = [];
 
-        // Parse Placements
-        let desktopPlacements = {{.Layout.Placements | json}} || [];
-        let mobilePlacements = {{.Layout.MobilePlacements | json}} || [];
+        // Photo data from server
+        const photos = {
+            { { range.Photos } }
+        '{{.Filename}}': {
+            filename: '{{.Filename}}',
+                thumbPath: '{{.ThumbPath}}',
+                    ratioWidth: { {.RatioWidth } },
+            ratioHeight: { {.RatioHeight } }
+        },
+        { { end } }
+        };
 
-        // Parse Photos and convert to dictionary map
-        const photosArray = {{.Photos | json}} || [];
-        const photos = {};
-        photosArray.forEach(p => {
-            photos[p.filename] = p; // Ensure we map by filename
+        // Initialize placements from server
+        { { range.Layout.Placements } }
+        {
+            const pos = {
+                topLeftX: {{.Position.TopLeftX }
+        },
+        topLeftY: { {.Position.TopLeftY } },
+        bottomRightX: { {.Position.BottomRightX } },
+        bottomRightY: { {.Position.BottomRightY } }
+            };
+        // Calculate original dimensions from saved position
+        const savedWidth = pos.bottomRightX - pos.topLeftX + 1;
+        const savedHeight = pos.bottomRightY - pos.topLeftY + 1;
+        // Derive original dimensions and coefficient from the photo's known ratio
+        const photoMeta = photos['{{.Filename}}'];
+        let originalWidth, originalHeight, coefficient;
+        if (photoMeta && photoMeta.ratioWidth && photoMeta.ratioHeight) {
+            originalWidth = photoMeta.ratioWidth;
+            originalHeight = photoMeta.ratioHeight;
+
+            // Compute separate coefficients for width and height and take nearest integer
+            const coefW = savedWidth / originalWidth;
+            const coefH = savedHeight / originalHeight;
+            // Average the two coefficients to be robust to small layout inconsistencies
+            coefficient = Math.max(1, Math.round((coefW + coefH) / 2));
+
+            // If coefficients are zero/NaN for any reason, fallback to 1
+            if (!isFinite(coefficient) || coefficient < 1) coefficient = 1;
+        } else {
+            // Fallback: treat saved size as the original (legacy data)
+            originalWidth = savedWidth;
+            originalHeight = savedHeight;
+            coefficient = 1;
+        }
+
+        placements.push({
+            filename: '{{.Filename}}',
+            originalWidth: originalWidth,
+            originalHeight: originalHeight,
+            coefficient: coefficient,
+            position: pos
         });
+        }
+        { { end } }
 
-        // Ensure placements are initialized for JS logic (legacy correction)
-        [desktopPlacements, mobilePlacements].forEach(arr => {
-            arr.forEach(p => {
-                // Calculate original dimensions/coeff if missing or ensure consistency
-                if (!p.originalWidth || !p.coefficient) {
-                    const photo = photos[p.filename];
-                    const pos = p.position;
-                    const savedWidth = pos.bottomRightX - pos.topLeftX + 1;
-                    const savedHeight = pos.bottomRightY - pos.topLeftY + 1;
+        // Save desktop placements as initial state
+        desktopPlacements = [...placements];
 
-                    p.coefficient = 1;
-                    p.originalWidth = savedWidth;
-                    p.originalHeight = savedHeight;
+        // Initialize mobile placements from server
+        { { range.Layout.MobilePlacements } }
+        {
+            const pos = {
+                topLeftX: {{.Position.TopLeftX }
+        },
+        topLeftY: { {.Position.TopLeftY } },
+        bottomRightX: { {.Position.BottomRightX } },
+        bottomRightY: { {.Position.BottomRightY } }
+            };
+        const savedWidth = pos.bottomRightX - pos.topLeftX + 1;
+        const savedHeight = pos.bottomRightY - pos.topLeftY + 1;
+        const photoMeta = photos['{{.Filename}}'];
+        let originalWidth, originalHeight, coefficient;
+        if (photoMeta && photoMeta.ratioWidth && photoMeta.ratioHeight) {
+            originalWidth = photoMeta.ratioWidth;
+            originalHeight = photoMeta.ratioHeight;
+            const coefW = savedWidth / originalWidth;
+            const coefH = savedHeight / originalHeight;
+            coefficient = Math.max(1, Math.round((coefW + coefH) / 2));
+            if (!isFinite(coefficient) || coefficient < 1) coefficient = 1;
+        } else {
+            originalWidth = savedWidth;
+            originalHeight = savedHeight;
+            coefficient = 1;
+        }
 
-                    if (photo && photo.ratioWidth && photo.ratioHeight) {
-                        p.originalWidth = photo.ratioWidth;
-                        p.originalHeight = photo.ratioHeight;
-                        const coefW = savedWidth / p.originalWidth;
-                        const coefH = savedHeight / p.originalHeight;
-                        p.coefficient = Math.max(1, Math.round((coefW + coefH) / 2));
-                    }
-                }
-            });
+        mobilePlacements.push({
+            filename: '{{.Filename}}',
+            originalWidth: originalWidth,
+            originalHeight: originalHeight,
+            coefficient: coefficient,
+            position: pos
         });
-
-        // Set initial placements
-        placements = [...desktopPlacements];
-
+        }
+        { { end } }
 
         // If no mobile placements, create a scaled-down version from desktop
         if (mobilePlacements.length === 0 && desktopPlacements.length > 0) {
@@ -703,66 +671,8 @@
                 }
             }
 
-            renderRowIndicators(maxRow);
             renderPlacements();
             updatePhotoList();
-        }
-
-        function renderRowIndicators(maxRow) {
-            const container = document.getElementById('row-indicators');
-            container.innerHTML = '';
-            container.style.gridTemplateRows = `repeat(${maxRow}, 1fr)`;
-
-            for (let i = 1; i <= maxRow; i++) {
-                const indicator = document.createElement('div');
-                indicator.className = 'row-indicator';
-                indicator.dataset.row = i;
-                indicator.title = `Row ${i}`;
-
-                const textSpan = document.createElement('span');
-                textSpan.textContent = i;
-                indicator.appendChild(textSpan);
-
-                const controls = document.createElement('div');
-                controls.className = 'row-controls-popover';
-
-                const btnInc = document.createElement('button');
-                btnInc.className = 'indicator-btn btn-inc-row';
-                btnInc.textContent = '+';
-                btnInc.title = 'Insert Row Above';
-                btnInc.onclick = (e) => {
-                    e.stopPropagation();
-                    insertRow(i);
-                };
-
-                const btnDec = document.createElement('button');
-                btnDec.className = 'indicator-btn btn-dec-row';
-                btnDec.textContent = '-';
-                btnDec.title = 'Delete Row';
-                btnDec.onclick = (e) => {
-                    e.stopPropagation();
-                    deleteRow(i);
-                };
-
-                controls.appendChild(btnInc);
-                controls.appendChild(btnDec);
-                indicator.appendChild(controls);
-
-                indicator.onclick = () => {
-                    if (activeRowIndex === i) {
-                        activeRowIndex = null;
-                    } else {
-                        activeRowIndex = i;
-                    }
-                    renderRowIndicators(maxRow);
-                };
-
-                if (activeRowIndex === i) {
-                    indicator.classList.add('active');
-                }
-
-                container.appendChild(indicator);
-            }
         }
 
         function renderPlacements() {
@@ -1153,8 +1063,11 @@
                 showStatus(`Inserted empty row at ${rowIndex}`, 'success');
             } else {
                 showStatus(`No photos found below row ${rowIndex}, but row inserted virtually`, 'info');
-                // Even if no photos moved, we re-render to potentially update UI if needed
-                initGrid();
+                // Even if no photos moved (because all are above), we might want to conceptually "insert" 
+                // but since grid is sparse, nothing changes visually unless there are photos below.
+                // However, for consistency, we should maybe force a re-render or check maxRow.
+                // If I insert at 5, and all photos are at 1-4, nothing happens. 
+                // If I insert at 5, and photos are at 6, they move to 7. Correct.
             }
         }
 
@@ -1364,6 +1277,27 @@
             });
         });
 
+        // Row Management Listeners
+        document.getElementById('btn-insert-row').addEventListener('click', function () {
+            const input = document.getElementById('target-row');
+            const row = parseInt(input.value);
+            if (!row || row < 1) {
+                showStatus('Please enter a valid row number', 'error');
+                return;
+            }
+            insertRow(row);
+        });
+
+        document.getElementById('btn-delete-row').addEventListener('click', function () {
+            const input = document.getElementById('target-row');
+            const row = parseInt(input.value);
+            if (!row || row < 1) {
+                showStatus('Please enter a valid row number', 'error');
+                return;
+            }
+            deleteRow(row);
+        });
+
         // Close selection panel when clicking outside
         document.addEventListener('click', function (e) {
             if (!e.target.closest('.placed-photo') &&
@@ -1417,25 +1351,6 @@
                     e.preventDefault();
                     removePhoto();
                     break;
-            }
-        });
-
-        // Handle global clicks for closing row indicators
-        document.addEventListener('click', function (e) {
-            // If click is not inside any row-indicator or its children, close active row
-            if (!e.target.closest('.row-indicator')) {
-                if (activeRowIndex !== null) {
-                    activeRowIndex = null;
-                    // We need to re-render to update the UI classes. 
-                    // However, full re-render (initGrid) is expensive.
-                    // Just updating classes via renderRowIndicators is safer/faster if we know maxRow.
-                    // But for simplicity and consistency with state:
-                    const container = document.getElementById('row-indicators');
-                    if (container && container.children.length > 0) {
-                        // Assuming maxRow is container.children.length
-                        renderRowIndicators(container.children.length);
-                    }
-                }
             }
         });
 

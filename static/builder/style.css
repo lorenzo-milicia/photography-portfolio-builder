@@ -17,16 +17,16 @@
     --gray-lightest: #ecf0f1;
     --white: #ffffff;
     --bg: #f8f9fa;
-    
+
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
     --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12);
     --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.10);
     --shadow-xl: 0 15px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05);
-    
+
     --radius-sm: 6px;
     --radius-md: 8px;
     --radius-lg: 12px;
-    
+
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -114,6 +114,7 @@ body {
         opacity: 0;
         transform: translateX(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -239,6 +240,7 @@ body {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -299,6 +301,7 @@ body {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -406,6 +409,7 @@ textarea {
         opacity: 0;
         transform: scale(0.9);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
@@ -454,26 +458,123 @@ textarea {
 
 /* Generate Section */
 .generate-section {
-    margin-top: 2rem;
+    margin-top: auto;
+    /* Push to bottom */
     padding-top: 2rem;
-    border-top: 2px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     animation: fadeIn 0.5s ease-out;
 }
 
-#generate-result {
-    margin-top: 1rem;
-    padding: 1rem;
-    border-radius: var(--radius-md);
-    font-size: 0.9rem;
-    animation: slideUp 0.3s ease-out;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--white);
+/* Spinner styles */
+/* Spinner styles */
+/* Spinner - Specific to Generate Button */
+#generate-btn .spinner-icon {
+    width: 20px;
+    height: 20px;
+    margin-left: 8px;
+    vertical-align: middle;
+    /* Use 'spin' animation with verify definition */
+    animation: spin 1s linear infinite;
+    display: none;
 }
 
-#generate-result a {
-    color: var(--primary-light);
-    text-decoration: underline;
+/* FIX: Target the spinner element specifically when it has the htmx-request class */
+#generate-spinner.htmx-request {
+    display: inline-block !important;
+}
+
+/* Ensure keyframes are defined correctly */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Toast Notifications */
+#toast-container {
+    position: fixed;
+    bottom: 30px;
+    /* Moved to bottom */
+    right: 30px;
+    /* Moved to right */
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.toast {
+    background: white;
+    padding: 1.25rem 1.5rem;
+    /* Increased padding */
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xl);
+    /* Stronger shadow */
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.05rem;
+    /* Bigger font */
     font-weight: 600;
+    min-width: 340px;
+    /* Wider */
+    pointer-events: auto;
+    animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0;
+    transform: translateX(40px);
+    animation-fill-mode: forwards;
+}
+
+/* Toast animation */
+@keyframes slideInRight {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.toast.success {
+    border-left: 6px solid var(--success);
+}
+
+.toast.success .icon {
+    color: var(--success);
+    font-size: 1.25rem;
+}
+
+.toast.error {
+    border-left: 6px solid var(--danger);
+}
+
+.toast.error .icon {
+    color: var(--danger);
+    font-size: 1.25rem;
+}
+
+/* Preview Button */
+#preview-btn {
+    width: 100%;
+    margin-top: 0.75rem;
+    background: var(--dark-lighter);
+    cursor: not-allowed;
+    opacity: 0.7;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#preview-btn.enabled {
+    background: var(--primary);
+    cursor: pointer;
+    opacity: 1;
+}
+
+#preview-btn.enabled:hover {
+    background: var(--primary-dark);
 }
 
 #update-result,
@@ -496,37 +597,12 @@ textarea {
     display: none;
 }
 
-/* Utility Classes */
-.flex {
-    display: flex;
-}
-
-.gap-1 {
-    gap: 0.5rem;
-}
-
-.gap-2 {
-    gap: 1rem;
-}
-
-.mt-1 {
-    margin-top: 0.5rem;
-}
-
-.mt-2 {
-    margin-top: 1rem;
-}
-
-.mb-2 {
-    margin-bottom: 1rem;
-}
-
-/* Responsive Design */
+/* Responsiveness adjustments */
 @media (max-width: 1024px) {
     .sidebar {
         width: 280px;
     }
-    
+
     .main-content {
         padding: 2rem;
     }
@@ -536,21 +612,34 @@ textarea {
     body {
         flex-direction: column;
     }
-    
+
     .sidebar {
         width: 100%;
         height: auto;
         max-height: 40vh;
     }
-    
+
+    #toast-container {
+        bottom: 20px;
+        right: 20px;
+        left: 20px;
+        /* Full width on mobile */
+        align-items: center;
+    }
+
+    .toast {
+        width: 100%;
+        min-width: auto;
+    }
+
     .main-content {
         padding: 1.5rem;
     }
-    
+
     .welcome h2 {
         font-size: 2rem;
     }
-    
+
     #photo-gallery {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 1rem;

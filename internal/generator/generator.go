@@ -86,12 +86,20 @@ func (g *Generator) Generate(baseURL string) error {
 	}
 
 	// Get all projects
-	projects, err := g.contentMgr.ListProjects()
+	allProjects, err := g.contentMgr.ListProjects()
 	if err != nil {
 		return fmt.Errorf("failed to list projects: %w", err)
 	}
 
-	log.Info().Int("count", len(projects)).Msg("Generating site for projects")
+	// Filter out hidden projects
+	var projects []*content.ProjectMetadata
+	for _, p := range allProjects {
+		if !p.Hidden {
+			projects = append(projects, p)
+		}
+	}
+
+	log.Info().Int("total", len(allProjects)).Int("active", len(projects)).Msg("Generating site for projects")
 
 	// Generate index page
 	log.Debug().Msg("Generating index page")
@@ -213,10 +221,17 @@ func (g *Generator) generateAbout() error {
 	}
 
 	// Get all projects for navigation
-	projects, err := g.contentMgr.ListProjects()
+	allProjects, err := g.contentMgr.ListProjects()
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to list projects for navigation")
-		projects = []*content.ProjectMetadata{}
+		allProjects = []*content.ProjectMetadata{}
+	}
+
+	var projects []*content.ProjectMetadata
+	for _, p := range allProjects {
+		if !p.Hidden {
+			projects = append(projects, p)
+		}
 	}
 
 	data := map[string]interface{}{
@@ -275,6 +290,13 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error 
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to list projects for navigation")
 		allProjects = []*content.ProjectMetadata{}
+	}
+
+	var projects []*content.ProjectMetadata
+	for _, p := range allProjects {
+		if !p.Hidden {
+			projects = append(projects, p)
+		}
 	}
 
 	// Optimize and copy photos to output (must be done before generating HTML)
@@ -372,7 +394,7 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error 
 		"OriginalLayout": layout, // Keep original for variant lookup
 		"VariantsMap":    originalToVariants,
 		"BaseURL":        g.baseURL,
-		"AllProjects":    allProjects,
+		"AllProjects":    projects,
 		"WebsiteName":    siteMeta.WebsiteName,
 		"LogoPrimary":    siteMeta.LogoPrimary,
 		"LogoSecondary":  siteMeta.LogoSecondary,
@@ -420,6 +442,37 @@ func validateLayout(layout *content.LayoutConfig) error {
 					return fmt.Errorf("placement %d (%s) overlaps with placement %d (%s) at cell %s", i, p.Filename, other, layout.Placements[other].Filename, key)
 				}
 				occ[key] = i
+			}
+		}
+	}
+
+	// Validate Mobile Placements (Independent Grid)
+	mobileOcc := make(map[string]int)
+	mobileGridWidth := layout.MobileGridWidth
+	if mobileGridWidth <= 0 {
+		mobileGridWidth = 6 // Default fallback matching JS logic
+	}
+
+	for i, p := range layout.MobilePlacements {
+		pos := p.Position
+		if pos.TopLeftX < 1 || pos.TopLeftY < 1 {
+			return fmt.Errorf("mobile placement %d (%s) has top-left coordinates less than 1", i, p.Filename)
+		}
+		if pos.BottomRightX < pos.TopLeftX || pos.BottomRightY < pos.TopLeftY {
+			return fmt.Errorf("mobile placement %d (%s) has bottom-right before top-left", i, p.Filename)
+		}
+		if pos.BottomRightX > mobileGridWidth {
+			return fmt.Errorf("mobile placement %d (%s) extends beyond mobile grid width (%d): bottom_right_x=%d", i, p.Filename, mobileGridWidth, pos.BottomRightX)
+		}
+
+		// Check overlaps
+		for x := pos.TopLeftX; x <= pos.BottomRightX; x++ {
+			for y := pos.TopLeftY; y <= pos.BottomRightY; y++ {
+				key := fmt.Sprintf("%d,%d", x, y)
+				if other, ok := mobileOcc[key]; ok {
+					return fmt.Errorf("mobile placement %d (%s) overlaps with mobile placement %d (%s) at cell %s", i, p.Filename, other, layout.MobilePlacements[other].Filename, key)
+				}
+				mobileOcc[key] = i
 			}
 		}
 	}

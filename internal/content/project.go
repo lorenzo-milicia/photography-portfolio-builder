@@ -16,6 +16,7 @@ type ProjectMetadata struct {
 	Title       string    `yaml:"title"`
 	Slug        string    `yaml:"slug"`
 	Description string    `yaml:"description"`
+	Hidden      bool      `yaml:"hidden"`
 	CreatedAt   time.Time `yaml:"created_at"`
 	UpdatedAt   time.Time `yaml:"updated_at"`
 }
@@ -97,6 +98,11 @@ func (m *Manager) LoadSiteMeta() (*SiteMetadata, error) {
 		return nil, err
 	}
 	return &meta, nil
+}
+
+// SaveSiteMeta saves the site metadata
+func (m *Manager) SaveSiteMeta(meta *SiteMetadata) error {
+	return util.SaveYAML(m.SiteMetaPath(), meta)
 }
 
 // ProjectsDir returns the projects directory path
@@ -199,7 +205,7 @@ func (m *Manager) GetProject(slug string) (*ProjectMetadata, error) {
 }
 
 // UpdateProject updates a project's metadata
-func (m *Manager) UpdateProject(slug string, title, description string) error {
+func (m *Manager) UpdateProject(slug string, title, description string, hidden bool) error {
 	meta, err := m.GetProject(slug)
 	if err != nil {
 		return err
@@ -207,6 +213,7 @@ func (m *Manager) UpdateProject(slug string, title, description string) error {
 
 	meta.Title = title
 	meta.Description = description
+	meta.Hidden = hidden
 	meta.UpdatedAt = time.Now()
 
 	return util.SaveYAML(m.ProjectMetaPath(slug), meta)
