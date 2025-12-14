@@ -48,20 +48,39 @@
 
         {{if .Contact}}
         <section class="contact-section">
-            <h2 class="contact-title">Get in Touch</h2>
-            <div class="contact-links">
-                {{if .Contact.Email}}
-                <a href="mailto:{{.Contact.Email}}" class="contact-link">
-                    <span class="contact-link-icon" aria-hidden="true">✉</span>
-                    <span class="contact-link-text">{{.Contact.Email}}</span>
-                </a>
-                {{end}}
-                {{if .Contact.Website}}
-                <a href="{{.Contact.Website}}" target="_blank" rel="noopener noreferrer" class="contact-link">
-                    <span class="contact-link-icon">🌐</span>
-                    Website
-                </a>
-                {{end}}
+            <div class="contact-content">
+                <h2 class="contact-title">Get in Touch</h2>
+                <div class="contact-list">
+                    {{if .Contact.Email}}
+                    <a href="mailto:{{.Contact.Email}}" class="contact-item">
+                        <div class="contact-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </div>
+                        <div class="contact-details">
+                            <span class="contact-label">Email</span>
+                            <span class="contact-value">{{.Contact.Email}}</span>
+                        </div>
+                    </a>
+                    {{end}}
+                    {{if .Contact.Website}}
+                    <a href="{{.Contact.Website}}" target="_blank" rel="noopener noreferrer" class="contact-item">
+                        <div class="contact-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                            </svg>
+                        </div>
+                        <div class="contact-details">
+                            <span class="contact-label">Website</span>
+                            <span class="contact-value">{{.Contact.Website}}</span>
+                        </div>
+                    </a>
+                    {{end}}
+                </div>
             </div>
         </section>
         {{end}}

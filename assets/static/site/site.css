@@ -101,6 +101,10 @@ h1 { font-size: 3rem; }
 h2 { font-size: 2rem; }
 h3 { font-size: 1.5rem; }
 
+.page-title {
+    font-size: 2.25rem;
+}
+
 p {
     margin-bottom: 1rem;
     color: var(--text-light);
@@ -427,7 +431,7 @@ p {
 .project-link::after {
     content: '→';
     position: absolute;
-    right: 0;
+    right: 3rem;   
     top: 50%;
     transform: translateY(-50%);
     font-size: 1.25rem;
@@ -447,7 +451,7 @@ p {
 
 .project-link:hover::after {
     opacity: 0.6;
-    right: 0.5rem;
+    right: 1.5rem;
 }
 
 .project-link:hover .project-number {
@@ -467,6 +471,15 @@ p {
     min-width: 3rem;
     flex-shrink: 0;
     transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.project-number svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: inherit;
 }
 
 .project-info {
@@ -679,6 +692,117 @@ p {
 }
 
 .contact-section {
+    margin-top: 6rem;
+    padding: 4rem 0;
+    border-top: 1px solid var(--border);
+}
+
+.contact-content {
+    max-width: 300px;
+}
+
+.contact-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--text-light);
+    text-align: left;
+    margin-bottom: 2.5rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    padding-right: 2.5rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.contact-item::after {
+    content: '→';
+    position: absolute;
+    right: 3rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.25rem;
+    color: var(--text-light);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.contact-item:first-child {
+    border-top: 1px solid var(--border);
+}
+
+.contact-item:hover {
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+.contact-item:hover::after {
+    opacity: 0.6;
+    right: 1.5rem;
+}
+
+.contact-item:active {
+    opacity: 0.7;
+}
+
+.contact-icon {
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-alt);
+    border-radius: 8px;
+    color: var(--accent);
+}
+
+.contact-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.contact-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.contact-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.contact-value {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text);
+    word-break: break-all;
+}
+
+.contact-section {
     max-width: 800px;
     margin: 4rem auto 0;
     padding: 3rem 0;
@@ -689,8 +813,8 @@ p {
     font-size: 1.25rem;
     font-weight: 500;
     color: var(--text-light);
-    text-align: center;
-    margin-bottom: 2rem;
+    text-align: left;
+    margin-bottom: 2.5rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
 }
@@ -785,6 +909,9 @@ p {
     line-height: 1.4;
 }
 
+.home-footer p {
+    margin: 0;
+}
 /* ============================================================================
    Responsive Design - Mobile (max-width: 768px)
    ============================================================================ */
@@ -810,6 +937,10 @@ p {
     /* Typography */
     h1 {
         font-size: 2rem;
+    }
+
+    .page-title {
+        font-size: 1.75rem;
     }
 
     .section-title {
@@ -999,6 +1130,11 @@ p {
         font-size: 0.75rem;
     }
 
+    .project-number svg {
+        width: 1rem;
+        height: 1rem;
+    }
+
     .project-name {
         font-size: 1.05rem;
     }
@@ -1064,6 +1200,77 @@ p {
     .main-navbar,
     header nav {
         display: none;
+    }
+/* ============================================================================
+   Mobile Styles
+   ============================================================================ */
+
+@media (max-width: 768px) {
+    .about-content {
+        padding: 0 1.5rem;
+    }
+
+    .about-quote {
+        margin-top: 3rem;
+        padding: 2.5rem 2rem 3.5rem;
+        font-size: 1.2rem;
+    }
+
+    .about-quote::before,
+    .about-quote::after {
+        font-size: 3rem;
+    }
+
+    .quote-source {
+        bottom: 1rem;
+        right: 1.5rem;
+        font-size: 0.8rem;
+    }
+
+    .contact-section {
+        margin-top: 4rem;
+        padding: 3rem 1.5rem;
+    }
+
+    .contact-title {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+
+    .contact-list {
+        gap: 1rem;
+    }
+
+    .contact-item {
+        padding: 1.25rem;
+        gap: 1rem;
+    }
+
+    .contact-item:hover {
+        padding-left: 0.25rem;
+        padding-right: 1.5rem;
+    }
+
+    .contact-item:hover::after {
+        right: 0.25rem;
+    }
+
+    .contact-icon {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .contact-icon svg {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .contact-label {
+        font-size: 0.8rem;
+    }
+
+    .contact-value {
+        font-size: 0.9rem;
     }
 }
 
