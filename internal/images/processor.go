@@ -166,6 +166,19 @@ func (p *Processor) generateResponsiveVariants(sourcePath, destDir, baseFilename
 		}
 	}
 
+	// Ensure at least one variant exists (for very small grid cells)
+	if len(finalWidths) == 0 {
+		// Use the original width or maxWidth, whichever is smaller
+		fallbackWidth := maxWidth
+		if origWidth < fallbackWidth {
+			fallbackWidth = origWidth
+		}
+		if fallbackWidth < 320 {
+			fallbackWidth = 320 // Absolute minimum
+		}
+		finalWidths = append(finalWidths, fallbackWidth)
+	}
+
 	variants := &ImageVariants{
 		BaseFilename: baseFilename,
 		Variants:     make([]ImageVariant, 0, len(finalWidths)),

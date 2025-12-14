@@ -412,10 +412,20 @@ body {
     cursor: pointer;
     color: var(--text);
     transition: var(--transition);
+    border-radius: 6px;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .navbar-toggle:hover {
     color: var(--primary);
+    background: var(--bg-alt);
+}
+
+.navbar-toggle:active,
+.navbar-toggle:focus {
+    background: var(--bg-alt);
+    color: var(--primary);
+    outline: none;
 }
 
 .navbar-toggle svg {
@@ -531,14 +541,20 @@ body {
     color: var(--primary);
 }
 
-/* Navbar Center - Current Project Display */
+/* Logo Secondary */
+.logo-secondary {
+    display: inline-block;
+    vertical-align: baseline;
+}
+
+/* Navbar Center - Desktop Only */
 .navbar-center {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.25s ease;
 }
 
 .navbar-center.visible {
@@ -550,9 +566,6 @@ body {
     font-weight: 300;
     color: var(--primary);
     white-space: nowrap;
-    text-overflow: ellipsis;
-    max-width: 300px;
-    overflow: hidden;
 }
 
 /* Header Styles */
@@ -1102,6 +1115,19 @@ footer {
 
     .gallery.justified .gallery-item {
         height: 250px;
+    }
+
+    /* Mobile: Hide center title, morph logo secondary instead */
+    .navbar-center {
+        display: none;
+    }
+    
+    .logo-secondary {
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        transition: opacity 0.3s ease;
     }
 }
 

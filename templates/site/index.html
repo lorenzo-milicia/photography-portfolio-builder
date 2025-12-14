@@ -18,7 +18,7 @@
                 <nav class="projects-nav">
                     <div class="projects-wrapper">
                         {{range $idx, $project := .Projects}}
-                        <a href="{{$.BaseURL}}/{{$project.Slug}}/" class="project-link">
+                        <a href="{{$.BaseURL}}/{{$project.Slug}}" class="project-link">
                             <span class="project-number">{{printf "%02d" (add $idx 1)}}</span>
                             <div class="project-info">
                                 <h2 class="project-name">{{$project.Title}}</h2>

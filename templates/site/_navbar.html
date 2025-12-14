@@ -4,7 +4,7 @@
         <a href="{{.BaseURL}}/" class="navbar-logo">
             <span class="logo-primary">{{.LogoPrimary}}</span>
             <span class="logo-separator">·</span>
-            <span class="logo-secondary">{{.LogoSecondary}}</span>
+            <span class="logo-secondary" data-default="{{.LogoSecondary}}"{{if .Project}} data-project="{{.Project.Title}}"{{end}}>{{.LogoSecondary}}</span>
         </a>
         {{if .Project}}
         <div class="navbar-center">
@@ -12,7 +12,8 @@
         </div>
         {{end}}
         <button class="navbar-toggle" onclick="toggleMobileMenu()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <line x1="3" y1="18" x2="21" y2="18"></line>
@@ -21,15 +22,18 @@
         <div class="navbar-actions">
             <a href="{{.BaseURL}}/" class="navbar-link">Home</a>
             <div class="dropdown">
-                <button class="dropdown-toggle" onclick="const menu = this.nextElementSibling; menu.classList.toggle('open'); this.classList.toggle('active')">Projects</button>
+                <button class="dropdown-toggle"
+                    onclick="const menu = this.nextElementSibling; menu.classList.toggle('open'); this.classList.toggle('active')">Projects</button>
                 <div class="dropdown-menu">
                     {{if .AllProjects}}
                     {{range .AllProjects}}
-                    <a href="{{$.BaseURL}}/{{.Slug}}/" class="dropdown-item{{if eq .Slug $.Project.Slug}} active{{end}}">{{.Title}}</a>
+                    <a href="{{$.BaseURL}}/{{.Slug}}"
+                        class="dropdown-item{{if eq .Slug $.Project.Slug}} active{{end}}">{{.Title}}</a>
                     {{end}}
                     {{else if .Projects}}
                     {{range .Projects}}
-                    <a href="{{$.BaseURL}}/{{.Slug}}/" class="dropdown-item{{if eq .Slug $.Project.Slug}} active{{end}}">{{.Title}}</a>
+                    <a href="{{$.BaseURL}}/{{.Slug}}"
+                        class="dropdown-item{{if eq .Slug $.Project.Slug}} active{{end}}">{{.Title}}</a>
                     {{end}}
                     {{end}}
                 </div>
@@ -39,70 +43,95 @@
     </div>
 </nav>
 <script>
-// Mobile menu toggle
-function toggleMobileMenu() {
-    const navbarActions = document.querySelector('.navbar-actions');
-    navbarActions.classList.toggle('mobile-open');
-}
-
-// Close mobile menu when clicking outside
-document.addEventListener('click', function(e) {
-    const navbar = document.querySelector('.main-navbar');
-    const navbarActions = document.querySelector('.navbar-actions');
-    
-    if (!navbar.contains(e.target) && navbarActions.classList.contains('mobile-open')) {
-        navbarActions.classList.remove('mobile-open');
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+        const navbarActions = document.querySelector('.navbar-actions');
+        navbarActions.classList.toggle('mobile-open');
     }
-    
-    // Don't do anything when clicking on link - let natural navigation happen
-});
 
-// Dropdown click handler
-document.addEventListener('click', function(e) {
-    const dropdowns = document.querySelectorAll('.dropdown');
-    dropdowns.forEach(dropdown => {
-        const menu = dropdown.querySelector('.dropdown-menu');
-        const toggle = dropdown.querySelector('.dropdown-toggle');
-        if (!dropdown.contains(e.target)) {
-            menu.classList.remove('open');
-            toggle.classList.remove('active');
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function (e) {
+        const navbar = document.querySelector('.main-navbar');
+        const navbarActions = document.querySelector('.navbar-actions');
+
+        if (!navbar.contains(e.target) && navbarActions.classList.contains('mobile-open')) {
+            navbarActions.classList.remove('mobile-open');
         }
-    });
-});
 
-// Scroll-based navbar project title reveal
-document.addEventListener('DOMContentLoaded', function() {
-    const navbarCenter = document.querySelector('.navbar-center');
-    if (navbarCenter) {
-        const projectTitle = document.querySelector('.project-title');
-        if (projectTitle) {
+        // Don't do anything when clicking on link - let natural navigation happen
+    });
+
+    // Dropdown click handler
+    document.addEventListener('click', function (e) {
+        const dropdowns = document.querySelectorAll('.dropdown');
+        dropdowns.forEach(dropdown => {
+            const menu = dropdown.querySelector('.dropdown-menu');
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            if (!dropdown.contains(e.target)) {
+                menu.classList.remove('open');
+                toggle.classList.remove('active');
+            }
+        });
+    });
+
+    // Scroll-based navbar project title reveal
+    document.addEventListener('DOMContentLoaded', function () {
+        const navbarCenter = document.querySelector('.navbar-center');
+        const projectTitleElement = document.querySelector('.project-title');
+
+        if (navbarCenter && projectTitleElement) {
             let ticking = false;
-            
+
             function updateNavbarTitle() {
-                const titleRect = projectTitle.getBoundingClientRect();
+                const titleRect = projectTitleElement.getBoundingClientRect();
                 const navbar = document.querySelector('.main-navbar');
                 const navbarBottom = navbar.getBoundingClientRect().bottom;
-                
-                // Show navbar title when project title scrolls past navbar
+
                 if (titleRect.bottom < navbarBottom) {
+                    navbar.classList.add('navbar-title-visible');
                     navbarCenter.classList.add('visible');
+                    
+                    // Mobile only: morph logo secondary with fade
+                    if (window.innerWidth <= 768) {
+                        const logoSecondary = document.querySelector('.logo-secondary');
+                        const projectTitle = logoSecondary.getAttribute('data-project');
+                        if (logoSecondary && projectTitle && logoSecondary.textContent !== projectTitle) {
+                            logoSecondary.style.opacity = '0';
+                            setTimeout(() => {
+                                logoSecondary.textContent = projectTitle;
+                                logoSecondary.style.opacity = '1';
+                            }, 230);
+                        }
+                    }
                 } else {
+                    navbar.classList.remove('navbar-title-visible');
                     navbarCenter.classList.remove('visible');
+                    
+                    // Mobile only: restore logo secondary with fade
+                    if (window.innerWidth <= 768) {
+                        const logoSecondary = document.querySelector('.logo-secondary');
+                        const defaultTitle = logoSecondary.getAttribute('data-default');
+                        if (logoSecondary && defaultTitle && logoSecondary.textContent !== defaultTitle) {
+                            logoSecondary.style.opacity = '0';
+                            setTimeout(() => {
+                                logoSecondary.textContent = defaultTitle;
+                                logoSecondary.style.opacity = '1';
+                            }, 230);
+                        }
+                    }
                 }
                 ticking = false;
             }
-            
-            window.addEventListener('scroll', function() {
+
+            window.addEventListener('scroll', function () {
                 if (!ticking) {
                     window.requestAnimationFrame(updateNavbarTitle);
                     ticking = true;
                 }
             });
-            
-            // Initial check
+
             updateNavbarTitle();
         }
-    }
-});
+    });
 </script>
 {{end}}

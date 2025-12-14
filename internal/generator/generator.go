@@ -354,6 +354,15 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error 
 			Filename: largestVariant.Filename,
 			Position: placement.Position,
 		}
+
+		// Add mobile-only photos to the photo map if not already present
+		if _, exists := optimizedPhotoMap[largestVariant.Filename]; !exists {
+			if photo, ok := photoMap[placement.Filename]; ok {
+				newPhoto := *photo // Copy
+				newPhoto.Filename = largestVariant.Filename
+				optimizedPhotoMap[largestVariant.Filename] = &newPhoto
+			}
+		}
 	}
 
 	// Create project page

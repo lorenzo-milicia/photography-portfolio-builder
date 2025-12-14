@@ -44,11 +44,16 @@
             object-fit: cover;
         }
         
+        /* Hide mobile-only photos on desktop */
+        .mobile-only {
+            display: none;
+        }
+        
         /* Desktop grid positioning */
         {{range $idx, $placement := .Layout.Placements}}
         {{$photo := index $.PhotoMap $placement.Filename}}
         {{if $photo}}
-        .photo-{{$idx}}-{{sanitizeClass $placement.Filename}} {
+        .photo-desktop-{{$idx}}-{{sanitizeClass $placement.Filename}} {
             grid-column: {{$placement.Position.TopLeftX}} / {{add $placement.Position.BottomRightX 1}};
             grid-row: {{$placement.Position.TopLeftY}} / {{add $placement.Position.BottomRightY 1}};
         }
@@ -70,11 +75,17 @@
                 grid-auto-rows: calc((100vw - 1rem - ({{sub .Layout.MobileGridWidth 1}} * 0.5rem)) / {{.Layout.MobileGridWidth}});
             }
             
+            /* Hide desktop-only photos on mobile */
+            .desktop-only {
+                display: none;
+            }
+            
             /* Mobile grid positioning */
             {{range $idx, $placement := .Layout.MobilePlacements}}
             {{$photo := index $.PhotoMap $placement.Filename}}
             {{if $photo}}
-            .photo-{{$idx}}-{{sanitizeClass $placement.Filename}} {
+            .photo-mobile-{{$idx}}-{{sanitizeClass $placement.Filename}} {
+                display: block;
                 grid-column: {{$placement.Position.TopLeftX}} / {{add $placement.Position.BottomRightX 1}};
                 grid-row: {{$placement.Position.TopLeftY}} / {{add $placement.Position.BottomRightY 1}};
             }
@@ -115,21 +126,40 @@
             </div>
         </header>
 
-        {{if .Layout.Placements}}
+        {{if or .Layout.Placements .Layout.MobilePlacements}}
         <div class="gallery-wrapper">
             <div class="gallery-grid">
+                {{/* Render desktop placements */}}
                 {{range $idx, $placement := .Layout.Placements}}
-            {{$photo := index $.PhotoMap $placement.Filename}}
-            {{$originalPlacement := index $.OriginalLayout.Placements $idx}}
-            {{$variants := index $.VariantsMap $originalPlacement.Filename}}
-            {{if $photo}}
-            <div class="gallery-item photo-{{$idx}}-{{sanitizeClass $placement.Filename}} reveal-on-scroll">
-                <img src="{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$photo.Filename}}"
-                     srcset="{{range $vidx, $variant := $variants.Variants}}{{if $vidx}}, {{end}}{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$variant.Filename}} {{$variant.Width}}w{{end}}"
-                     sizes="{{calculateSizes $originalPlacement}}"
-                     alt="Photo {{add $idx 1}}"
-                     {{if lt $idx 6}}loading="eager"{{else}}loading="lazy"{{end}}>
-            </div>
+                {{$photo := index $.PhotoMap $placement.Filename}}
+                {{$originalPlacement := index $.OriginalLayout.Placements $idx}}
+                {{$variants := index $.VariantsMap $originalPlacement.Filename}}
+                {{if $photo}}
+                <div class="gallery-item photo-desktop-{{$idx}}-{{sanitizeClass $placement.Filename}}{{if $.Layout.HasMobileLayout}} desktop-only{{end}} reveal-on-scroll">
+                    <img src="{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$photo.Filename}}"
+                         srcset="{{range $vidx, $variant := $variants.Variants}}{{if $vidx}}, {{end}}{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$variant.Filename}} {{$variant.Width}}w{{end}}"
+                         sizes="{{calculateSizes $originalPlacement}}"
+                         alt="Photo {{add $idx 1}}"
+                         {{if lt $idx 6}}loading="eager"{{else}}loading="lazy"{{end}}>
+                </div>
+                {{end}}
+                {{end}}
+                
+                {{/* Render mobile placements if custom mobile layout exists */}}
+                {{if .Layout.HasMobileLayout}}
+                {{range $idx, $placement := .Layout.MobilePlacements}}
+                {{$photo := index $.PhotoMap $placement.Filename}}
+                {{$originalPlacement := index $.OriginalLayout.MobilePlacements $idx}}
+                {{$variants := index $.VariantsMap $originalPlacement.Filename}}
+                {{if $photo}}
+                <div class="gallery-item photo-mobile-{{$idx}}-{{sanitizeClass $placement.Filename}} mobile-only reveal-on-scroll">
+                    <img src="{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$photo.Filename}}"
+                         srcset="{{range $vidx, $variant := $variants.Variants}}{{if $vidx}}, {{end}}{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$variant.Filename}} {{$variant.Width}}w{{end}}"
+                         sizes="(max-width: 768px) 100vw, 0px"
+                         alt="Photo {{add $idx 1}}"
+                         loading="lazy">
+                </div>
+                {{end}}
                 {{end}}
                 {{end}}
             </div>
