@@ -18,8 +18,8 @@ go.work
 # Dependency directories
 vendor/
 
-# Generated content
-content/
+# Generated content (only top-level)
+ /content/
 
 # Generated output
 output/
