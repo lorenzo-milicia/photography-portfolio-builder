@@ -49,6 +49,12 @@ func (g *Generator) Generate(baseURL string) error {
 		"le":     func(a, b int) bool { return a <= b },
 		"printf": fmt.Sprintf,
 		"nl2br":  func(s string) template.HTML { return template.HTML(strings.ReplaceAll(s, "\n", "<br>")) },
+		"stripAt": func(s string) string {
+			if strings.HasPrefix(s, "@") {
+				return s[1:]
+			}
+			return s
+		},
 		"sanitizeClass": func(s string) string {
 			// Replace dots and special chars with hyphens for valid CSS class names
 			result := ""
@@ -243,6 +249,7 @@ func (g *Generator) generateAbout() error {
 		"LogoSecondary": siteMeta.LogoSecondary,
 		"AllProjects":   projects,
 		"About":         siteMeta.About,
+		"Contact":       siteMeta.Contact,
 		"Copyright":     siteMeta.Copyright,
 	}
 
@@ -519,6 +526,7 @@ func (g *Generator) optimizeProjectPhotos(slug string, layout *content.LayoutCon
 
 // copyStaticAssets copies static assets (CSS, JS) to output
 func (g *Generator) copyStaticAssets() error {
+	// Create CSS directory
 	cssDir := filepath.Join(g.outputDir, "public", "static", "css")
 	if err := os.MkdirAll(cssDir, 0755); err != nil {
 		return fmt.Errorf("failed to create css directory: %w", err)
@@ -537,6 +545,27 @@ func (g *Generator) copyStaticAssets() error {
 			return fmt.Errorf("failed to write site CSS: %w", err)
 		}
 		log.Debug().Str("dest", cssPath).Msg("Copied site CSS")
+	}
+
+	// Create JS directory
+	jsDir := filepath.Join(g.outputDir, "public", "static", "js")
+	if err := os.MkdirAll(jsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create js directory: %w", err)
+	}
+
+	// Copy site JS from embedded static/site/site.js into the generated output
+	jsPath := filepath.Join(jsDir, "site.js")
+	jsData, err := fs.ReadFile(g.staticFS, "static/site/site.js")
+	if err != nil {
+		// Fallback: write an empty placeholder JS to avoid missing file
+		if err := os.WriteFile(jsPath, []byte("/* site.js missing - please add static/site/site.js */"), 0644); err != nil {
+			return fmt.Errorf("failed to write placeholder JS: %w", err)
+		}
+	} else {
+		if err := os.WriteFile(jsPath, jsData, 0644); err != nil {
+			return fmt.Errorf("failed to write site JS: %w", err)
+		}
+		log.Debug().Str("dest", jsPath).Msg("Copied site JS")
 	}
 
 	return nil

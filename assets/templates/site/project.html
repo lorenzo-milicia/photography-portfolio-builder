@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Project.Title}} - Photography Portfolio</title>
+    <title>{{.Project.Title}} - {{.WebsiteName}}</title>
+    <meta name="description" content="{{if .Project.Description}}{{.Project.Description}}{{else}}{{.Project.Title}} - Photography project by {{.WebsiteName}}{{end}}">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{.Project.Title}} - {{.WebsiteName}}">
+    <meta property="og:description" content="{{if .Project.Description}}{{.Project.Description}}{{else}}Photography project by {{.WebsiteName}}{{end}}">
+    {{if .BaseURL}}<meta property="og:url" content="{{.BaseURL}}/{{.Project.Slug}}/">{{end}}
+    
     <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
     <style>
         .gallery-wrapper {
@@ -181,65 +189,11 @@
         <p class="empty-state">No photos placed in the layout yet.</p>
         {{end}}
     </div>
+    
     <footer class="home-footer">
         <p>&copy; {{.Copyright}}</p>
     </footer>
-    <script>
-        // Wait for images to load before revealing them to prevent flickering
-        function setupRevealObserver() {
-            if ('IntersectionObserver' in window) {
-                const observerOptions = {
-                    root: null,
-                    rootMargin: '50px 0px 50px 0px', // Trigger when entering viewport
-                    threshold: 0
-                };
-
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            const item = entry.target;
-                            const img = item.querySelector('img');
-                            
-                            // Only reveal after image has loaded
-                            if (img && !img.complete) {
-                                img.addEventListener('load', () => {
-                                    item.classList.add('visible');
-                                }, { once: true });
-                            } else {
-                                // Image already loaded or no image
-                                item.classList.add('visible');
-                            }
-                            
-                            observer.unobserve(item); // Only animate once
-                        }
-                    });
-                }, observerOptions);
-
-                // Observe all gallery items
-                document.querySelectorAll('.reveal-on-scroll').forEach(item => {
-                    observer.observe(item);
-                });
-            } else {
-                // Fallback for browsers without IntersectionObserver
-                document.querySelectorAll('.reveal-on-scroll').forEach(item => {
-                    const img = item.querySelector('img');
-                    if (img && !img.complete) {
-                        img.addEventListener('load', () => {
-                            item.classList.add('visible');
-                        }, { once: true });
-                    } else {
-                        item.classList.add('visible');
-                    }
-                });
-            }
-        }
-
-        // Start observing after DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', setupRevealObserver);
-        } else {
-            setupRevealObserver();
-        }
-    </script>
+    
+    <script src="{{.BaseURL}}/static/js/site.js"></script>
 </body>
 </html>

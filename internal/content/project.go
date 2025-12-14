@@ -67,6 +67,13 @@ type About struct {
 	QuoteSource string   `yaml:"quote_source,omitempty"`
 }
 
+// Contact holds contact information
+type Contact struct {
+	Email     string `yaml:"email,omitempty"`
+	Instagram string `yaml:"instagram,omitempty"`
+	Website   string `yaml:"website,omitempty"`
+}
+
 // ProjectOrder defines the order of projects in the UI
 type ProjectOrder struct {
 	Slug  string `yaml:"slug"`
@@ -79,6 +86,7 @@ type SiteMetadata struct {
 	LogoPrimary   string         `yaml:"logo_primary"`
 	LogoSecondary string         `yaml:"logo_secondary"`
 	About         *About         `yaml:"about,omitempty"`
+	Contact       *Contact       `yaml:"contact,omitempty"`
 	Projects      []ProjectOrder `yaml:"projects,omitempty"`
 }
 
