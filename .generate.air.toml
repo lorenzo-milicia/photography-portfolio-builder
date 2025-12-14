@@ -1,0 +1,29 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/main ./cmd/builder"
+  delay = 1000
+  entrypoint = ["./tmp/main", "generate"]
+  include_dir = ["content", "templates", "static", "internal", "cmd"]
+  include_ext = ["yaml", "jpeg", "html", "css", "go"]
+  kill_delay = "1s"
+  rerun = false
+  rerun_delay = 500
+  stop_on_error = true
+
+[color]
+  app = ""
+  build = "yellow"
+  main = "magenta"
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  silent = false
+  time = false
+
+[screen]
+  clear_on_rebuild = true
+  keep_scroll = true

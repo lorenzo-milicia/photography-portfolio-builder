@@ -1,0 +1,13 @@
+{{if .Projects}}
+<ul class="project-list">
+    {{range .Projects}}
+    <li class="project-item">
+        <a href="/project/{{.Slug}}" class="project-link" hx-get="/project/{{.Slug}}" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+            {{.Title}}
+        </a>
+    </li>
+    {{end}}
+</ul>
+{{else}}
+<p style="color: #95a5a6; font-size: 0.9rem; padding: 1rem;">No projects yet. Create your first project!</p>
+{{end}}

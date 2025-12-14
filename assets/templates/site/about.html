@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - {{.WebsiteName}}</title>
+    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
+</head>
+<body>
+    {{template "navbar" .}}
+
+    <div class="container">
+        <header class="page-header">
+            <h1 class="page-title">{{if .About}}{{.About.Title}}{{else}}About{{end}}</h1>
+        </header>
+
+        <div class="about-content">
+            {{if .About}}
+                {{range .About.Paragraphs}}
+                <p>{{nl2br .}}</p>
+                {{end}}
+                {{if .About.Quote}}
+                <blockquote class="about-quote">
+                    <p>{{nl2br .About.Quote}}</p>
+                    {{if .About.QuoteSource}}
+                    <cite class="quote-source">— {{.About.QuoteSource}}</cite>
+                    {{end}}
+                </blockquote>
+                {{end}}
+            {{else}}
+                <p>Welcome to my photography portfolio. I'm passionate about capturing moments that tell stories, evoke emotions, and showcase the beauty in everyday life and extraordinary scenes.</p>
+                
+                <p>Through my lens, I explore various themes including portraiture, landscapes, street photography, and creative compositions. Each project represents a unique journey and perspective on the world around us.</p>
+                
+                <p>This portfolio showcases my work across different projects, each with its own narrative and visual style. I believe that photography is not just about taking pictures, but about connecting with subjects, understanding light, and creating lasting impressions.</p>
+                
+                <p>Thank you for visiting and exploring my photographic journey.</p>
+            {{end}}
+        </div>
+    </div>
+    <footer class="home-footer">
+        <p>&copy; {{.Copyright}}</p>
+    </footer>
+</body>
+</html>

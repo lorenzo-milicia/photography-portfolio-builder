@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Project.Title}} - Photography Portfolio</title>
+    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
+    <style>
+        .gallery-wrapper {
+            width: 100%;
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat({{.Layout.GridWidth}}, 1fr);
+            gap: 1rem;
+            width: 100%;
+        }
+        
+        /* Responsive row height based on viewport/container width */
+        @media (min-width: 769px) {
+            .gallery-grid {
+                /* For screens wider than 1400px + padding */
+                grid-auto-rows: calc(min(1400px, 100vw - 2rem) / {{.Layout.GridWidth}} - ({{sub .Layout.GridWidth 1}} * 1rem / {{.Layout.GridWidth}}));
+            }
+        }
+        
+        .gallery-item {
+            position: relative;
+            background: #f5f5f5;
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* Hide mobile-only photos on desktop */
+        .mobile-only {
+            display: none;
+        }
+        
+        /* Desktop grid positioning */
+        {{range $idx, $placement := .Layout.Placements}}
+        {{$photo := index $.PhotoMap $placement.Filename}}
+        {{if $photo}}
+        .photo-desktop-{{$idx}}-{{sanitizeClass $placement.Filename}} {
+            grid-column: {{$placement.Position.TopLeftX}} / {{add $placement.Position.BottomRightX 1}};
+            grid-row: {{$placement.Position.TopLeftY}} / {{add $placement.Position.BottomRightY 1}};
+        }
+        {{end}}
+        {{end}}
+        
+        /* Mobile layout */
+        @media (max-width: 768px) {
+            {{if .Layout.HasMobileLayout}}
+            /* Custom mobile grid layout */
+            .gallery-wrapper {
+                padding: 0 0.5rem;
+                margin: 1rem auto;
+            }
+            
+            .gallery-grid {
+                grid-template-columns: repeat({{.Layout.MobileGridWidth}}, 1fr);
+                gap: 0.5rem;
+                grid-auto-rows: calc((100vw - 1rem - ({{sub .Layout.MobileGridWidth 1}} * 0.5rem)) / {{.Layout.MobileGridWidth}});
+            }
+            
+            /* Hide desktop-only photos on mobile */
+            .desktop-only {
+                display: none;
+            }
+            
+            /* Mobile grid positioning */
+            {{range $idx, $placement := .Layout.MobilePlacements}}
+            {{$photo := index $.PhotoMap $placement.Filename}}
+            {{if $photo}}
+            {{$cellWidth := sub $placement.Position.BottomRightX $placement.Position.TopLeftX}}
+            {{$cellHeight := sub $placement.Position.BottomRightY $placement.Position.TopLeftY}}
+            .photo-mobile-{{$idx}}-{{sanitizeClass $placement.Filename}} {
+                display: block;
+                grid-column: {{$placement.Position.TopLeftX}} / {{add $placement.Position.BottomRightX 1}};
+                grid-row: {{$placement.Position.TopLeftY}} / {{add $placement.Position.BottomRightY 1}};
+                aspect-ratio: {{$cellWidth}} / {{$cellHeight}};
+            }
+            {{end}}
+            {{end}}
+            {{else}}
+            /* Default mobile: single column, maintain aspect ratio */
+            .gallery-wrapper {
+                padding: 0 0.5rem;
+                margin: 1rem auto;
+            }
+            }
+            
+            .gallery-grid {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+                grid-auto-rows: auto;
+            }
+            
+            .gallery-item img {
+                object-fit: contain;
+                position: relative;
+            }
+            {{end}}
+        }
+    </style>
+</head>
+<body>
+    {{template "navbar" .}}
+
+    <div class="project-container">
+        <!-- Header with Title -->
+        <header class="project-header">
+            
+            <div class="header-content">
+                <h1 class="project-title">{{.Project.Title}}</h1>
+                {{if .Project.Description}}
+                <p class="project-subtitle">{{.Project.Description}}</p>
+                {{end}}
+            </div>
+        </header>
+
+        {{if or .Layout.Placements .Layout.MobilePlacements}}
+        <div class="gallery-wrapper">
+            <div class="gallery-grid">
+                {{/* Render desktop placements */}}
+                {{range $idx, $placement := .Layout.Placements}}
+                {{$photo := index $.PhotoMap $placement.Filename}}
+                {{$originalPlacement := index $.OriginalLayout.Placements $idx}}
+                {{$variants := index $.VariantsMap $originalPlacement.Filename}}
+                {{if $photo}}
+                <div class="gallery-item photo-desktop-{{$idx}}-{{sanitizeClass $placement.Filename}}{{if $.Layout.HasMobileLayout}} desktop-only{{end}} reveal-on-scroll">
+                    <img src="{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$photo.Filename}}"
+                         srcset="{{range $vidx, $variant := $variants.Variants}}{{if $vidx}}, {{end}}{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$variant.Filename}} {{$variant.Width}}w{{end}}"
+                         sizes="{{calculateSizes $originalPlacement}}"
+                         alt="Photo {{add $idx 1}}"
+                         {{if lt $idx 6}}loading="eager"{{else}}loading="lazy"{{end}}>
+                </div>
+                {{end}}
+                {{end}}
+                
+                {{/* Render mobile placements if custom mobile layout exists */}}
+                {{if .Layout.HasMobileLayout}}
+                {{range $idx, $placement := .Layout.MobilePlacements}}
+                {{$photo := index $.PhotoMap $placement.Filename}}
+                {{$originalPlacement := index $.OriginalLayout.MobilePlacements $idx}}
+                {{$variants := index $.VariantsMap $originalPlacement.Filename}}
+                {{if $photo}}
+                <div class="gallery-item photo-mobile-{{$idx}}-{{sanitizeClass $placement.Filename}} mobile-only reveal-on-scroll">
+                    <img src="{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$photo.Filename}}"
+                         srcset="{{range $vidx, $variant := $variants.Variants}}{{if $vidx}}, {{end}}{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$variant.Filename}} {{$variant.Width}}w{{end}}"
+                         sizes="(max-width: 768px) 100vw, 0px"
+                         alt="Photo {{add $idx 1}}"
+                         loading="lazy">
+                </div>
+                {{end}}
+                {{end}}
+                {{end}}
+            </div>
+        </div>
+        {{else}}
+        <p class="empty-state">No photos placed in the layout yet.</p>
+        {{end}}
+    </div>
+    <footer class="home-footer">
+        <p>&copy; {{.Copyright}}</p>
+    </footer>
+    <script>
+        // Wait for images to load before revealing them to prevent flickering
+        function setupRevealObserver() {
+            if ('IntersectionObserver' in window) {
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '50px 0px 50px 0px', // Trigger when entering viewport
+                    threshold: 0
+                };
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const item = entry.target;
+                            const img = item.querySelector('img');
+                            
+                            // Only reveal after image has loaded
+                            if (img && !img.complete) {
+                                img.addEventListener('load', () => {
+                                    item.classList.add('visible');
+                                }, { once: true });
+                            } else {
+                                // Image already loaded or no image
+                                item.classList.add('visible');
+                            }
+                            
+                            observer.unobserve(item); // Only animate once
+                        }
+                    });
+                }, observerOptions);
+
+                // Observe all gallery items
+                document.querySelectorAll('.reveal-on-scroll').forEach(item => {
+                    observer.observe(item);
+                });
+            } else {
+                // Fallback for browsers without IntersectionObserver
+                document.querySelectorAll('.reveal-on-scroll').forEach(item => {
+                    const img = item.querySelector('img');
+                    if (img && !img.complete) {
+                        img.addEventListener('load', () => {
+                            item.classList.add('visible');
+                        }, { once: true });
+                    } else {
+                        item.classList.add('visible');
+                    }
+                });
+            }
+        }
+
+        // Start observing after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupRevealObserver);
+        } else {
+            setupRevealObserver();
+        }
+    </script>
+</body>
+</html>
