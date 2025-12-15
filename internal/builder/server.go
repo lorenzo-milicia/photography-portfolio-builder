@@ -72,9 +72,9 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("/content/", http.StripPrefix("/content/",
 		http.FileServer(http.Dir(filepath.Dir(s.contentMgr.ProjectsDir())))))
 
-	// Serve generated site preview
+	// Serve generated site preview from the configured output root
 	mux.Handle("/preview/", http.StripPrefix("/preview/",
-		http.FileServer(http.Dir(filepath.Join(s.outputDir, "public")))))
+		http.FileServer(http.Dir(s.outputDir))))
 
 	// API routes (must be registered before catch-all)
 	mux.HandleFunc("/api/project/create", s.handleProjectCreate)
@@ -449,8 +449,8 @@ func (s *Server) handleGenerate(w http.ResponseWriter, r *http.Request) {
 
 	log.Info().Msg("Starting site generation")
 
-	// Generate with /preview base URL for local preview
-	if err := s.generator.Generate("/preview"); err != nil {
+	// Generate with /preview base URL for local preview (no external image host)
+	if err := s.generator.Generate("/preview", ""); err != nil {
 		log.Error().Err(err).Msg("Site generation failed")
 
 		// Send error toast trigger

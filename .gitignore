@@ -41,3 +41,7 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+/photos/
+/dist/
+
+*.env

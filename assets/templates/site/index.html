@@ -5,12 +5,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.WebsiteName}}</title>
-    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
+    <meta name="description" content="{{.WebsiteName}} - Photography portfolio showcasing creative projects and photographic work.">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{.WebsiteName}}">
+    <meta property="og:description" content="Photography portfolio showcasing creative projects and photographic work.">
+    {{if .BaseURL}}<meta property="og:url" content="{{.BaseURL}}/">{{end}}
+    
+    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css?v={{.BuildTimestamp}}">
 </head>
 
 <body>
     {{template "navbar" .}}
-    <div class="home-container">
+    <main class="home-container">
         {{if .Projects}}
         <section class="projects-section reveal-item">
             <div class="projects-content">
@@ -37,19 +45,13 @@
             <p>No projects available yet.</p>
         </div>
         {{end}}
-    </div>
+    </main>
+    
     <footer class="home-footer">
         <p>&copy; {{.Copyright}}</p>
     </footer>
-    <script>
-        // Reveal animation on load
-        document.addEventListener('DOMContentLoaded', function () {
-            const section = document.querySelector('.reveal-item');
-            setTimeout(() => {
-                section.classList.add('visible');
-            }, 100);
-        });
-    </script>
+    
+    <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
 </body>
 
 </html>

@@ -4,12 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About - {{.WebsiteName}}</title>
-    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
+    <meta name="description" content="{{if .About}}{{range $i, $p := .About.Paragraphs}}{{if eq $i 0}}{{$p}}{{end}}{{end}}{{else}}Learn more about the photographer behind {{.WebsiteName}}. Explore the story, vision, and creative approach.{{end}}">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="About - {{.WebsiteName}}">
+    <meta property="og:description" content="{{if .About}}{{range $i, $p := .About.Paragraphs}}{{if eq $i 0}}{{$p}}{{end}}{{end}}{{else}}Learn more about the photographer behind {{.WebsiteName}}.{{end}}">
+    {{if .BaseURL}}<meta property="og:url" content="{{.BaseURL}}/about/">{{end}}
+    
+    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css?v={{.BuildTimestamp}}">
 </head>
 <body>
     {{template "navbar" .}}
 
-    <div class="container">
+    <main class="container">
         <header class="page-header">
             <h1 class="page-title">{{if .About}}{{.About.Title}}{{else}}About{{end}}</h1>
         </header>
@@ -37,9 +45,51 @@
                 <p>Thank you for visiting and exploring my photographic journey.</p>
             {{end}}
         </div>
-    </div>
+
+        {{if .Contact}}
+        <section class="contact-section">
+            <div class="contact-content">
+                <h2 class="contact-title">Get in Touch</h2>
+                <div class="contact-list">
+                    {{if .Contact.Email}}
+                    <a href="mailto:{{.Contact.Email}}" class="contact-item">
+                        <div class="contact-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </div>
+                        <div class="contact-details">
+                            <span class="contact-label">Email</span>
+                            <span class="contact-value">{{.Contact.Email}}</span>
+                        </div>
+                    </a>
+                    {{end}}
+                    {{if .Contact.Website}}
+                    <a href="{{.Contact.Website}}" target="_blank" rel="noopener noreferrer" class="contact-item">
+                        <div class="contact-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                            </svg>
+                        </div>
+                        <div class="contact-details">
+                            <span class="contact-label">Website</span>
+                            <span class="contact-value">{{.Contact.Website}}</span>
+                        </div>
+                    </a>
+                    {{end}}
+                </div>
+            </div>
+        </section>
+        {{end}}
+    </main>
+    
     <footer class="home-footer">
         <p>&copy; {{.Copyright}}</p>
     </footer>
+    
+    <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
 </body>
 </html>
