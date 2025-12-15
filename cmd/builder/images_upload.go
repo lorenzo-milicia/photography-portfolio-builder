@@ -137,7 +137,11 @@ Example usage:
 			// Construct remote key (use forward slashes for S3)
 			key := filepath.ToSlash(relPath)
 			if uploadPrefix != "" {
+				// Use explicit prefix provided by user
 				key = strings.TrimSuffix(uploadPrefix, "/") + "/" + key
+			} else {
+				// Default to `images/` prefix so remote mirrors local `dist/images/...` layout
+				key = "images/" + key
 			}
 
 			// Check if file already exists (unless force is enabled)
@@ -221,7 +225,7 @@ func init() {
 	imagesUploadCmd.Flags().StringVarP(&uploadRegion, "region", "r", "", "S3 region (e.g., 'us-east-1', 'auto' for R2) (required)")
 	imagesUploadCmd.Flags().StringVar(&uploadEndpoint, "endpoint", "", "Custom S3 endpoint URL (for R2: https://account-id.r2.cloudflarestorage.com)")
 	imagesUploadCmd.Flags().StringVar(&uploadBaseURL, "base-url", "", "Public base URL for accessing files (e.g., https://images.example.com)")
-	imagesUploadCmd.Flags().StringVar(&uploadPrefix, "prefix", "", "Prefix to prepend to all keys (e.g., 'images/')")
+	imagesUploadCmd.Flags().StringVar(&uploadPrefix, "prefix", "images/", "Prefix to prepend to all keys (e.g., 'images/')")
 	imagesUploadCmd.Flags().BoolVar(&uploadForce, "force", false, "Force upload even if files already exist")
 	imagesUploadCmd.Flags().BoolVar(&uploadDryRun, "dry-run", false, "Simulate upload without actually uploading files")
 	imagesUploadCmd.Flags().BoolVar(&uploadSkipThumbs, "skip-thumbs", true, "Skip files in '.thumbs' directories")
