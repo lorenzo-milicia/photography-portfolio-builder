@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"go.lorenzomilicia.dev/photography-portfolio-builder/assets"
@@ -21,13 +22,8 @@ var websiteBuildCmd = &cobra.Command{
 		fmt.Printf("Building website...\n")
 		fmt.Printf("Content directory: %s\n", contentDirCLI)
 		fmt.Printf("Output directory: %s\n", outputDirCLI)
-		if host != "" {
-			fmt.Printf("Using image host: %s\n", host)
-		} else {
-			fmt.Println("Using local images (no host specified)")
-		}
-
-		// If host not provided via flag, allow environment variable override
+		// If host not provided via flag, allow environment variable override.
+		// Do this before printing so logs accurately reflect the final host value.
 		if host == "" {
 			// Prefer IMAGE_HOST, fall back to IMAGE_URL_PREFIX for backwards compatibility
 			if v := os.Getenv("IMAGE_HOST"); v != "" {
@@ -35,6 +31,14 @@ var websiteBuildCmd = &cobra.Command{
 			} else if v := os.Getenv("IMAGE_URL_PREFIX"); v != "" {
 				host = v
 			}
+		}
+
+		// Normalize host (strip trailing slash) to keep templates consistent
+		if host != "" {
+			host = strings.TrimRight(host, "/")
+			fmt.Printf("Using image host: %s\n", host)
+		} else {
+			fmt.Println("Using local images (no host specified)")
 		}
 
 		// Create generator
