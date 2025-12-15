@@ -12,7 +12,7 @@
     <meta property="og:description" content="{{if .Project.Description}}{{.Project.Description}}{{else}}Photography project by {{.WebsiteName}}{{end}}">
     {{if .BaseURL}}<meta property="og:url" content="{{.BaseURL}}/{{.Project.Slug}}/">{{end}}
     
-    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
+    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css?v={{.BuildTimestamp}}">
     <style>
         .gallery-wrapper {
             width: 100%;
@@ -54,13 +54,11 @@
         
         /* Desktop grid positioning */
         {{range $idx, $placement := .Layout.Placements}}
-        {{$photo := index $.PhotoMap $placement.Filename}}
-        {{if $photo}}
-        .photo-desktop-{{$idx}}-{{sanitizeClass $placement.Filename}} {
+        {{$hashID := $placement.Filename}}
+        .photo-desktop-{{$idx}}-{{sanitizeClass $hashID}} {
             grid-column: {{$placement.Position.TopLeftX}} / {{add $placement.Position.BottomRightX 1}};
             grid-row: {{$placement.Position.TopLeftY}} / {{add $placement.Position.BottomRightY 1}};
         }
-        {{end}}
         {{end}}
         
         /* Mobile layout */
@@ -100,15 +98,14 @@
             
             /* Mobile grid positioning */
             {{range $idx, $placement := .Layout.MobilePlacements}}
-            {{$photo := index $.PhotoMap $placement.Filename}}
-            {{if $photo}}
-            .photo-mobile-{{$idx}}-{{sanitizeClass $placement.Filename}} {
+            {{$hashID := $placement.Filename}}
+            {{$photo := index $.PhotoMap $hashID}}
+            .photo-mobile-{{$idx}}-{{sanitizeClass $hashID}} {
                 display: block;
                 grid-column: {{$placement.Position.TopLeftX}} / {{add $placement.Position.BottomRightX 1}};
                 grid-row: {{$placement.Position.TopLeftY}} / {{add $placement.Position.BottomRightY 1}};
-                aspect-ratio: {{$photo.RatioWidth}} / {{$photo.RatioHeight}};
+                {{if $photo}}aspect-ratio: {{$photo.RatioWidth}} / {{$photo.RatioHeight}};{{end}}
             }
-            {{end}}
             {{end}}
             {{else}}
             /* Default mobile: single column, maintain aspect ratio */
@@ -152,35 +149,34 @@
             <div class="gallery-grid">
                 {{/* Render desktop placements */}}
                 {{range $idx, $placement := .Layout.Placements}}
-                {{$photo := index $.PhotoMap $placement.Filename}}
-                {{$originalPlacement := index $.OriginalLayout.Placements $idx}}
-                {{$variants := index $.VariantsMap $originalPlacement.Filename}}
-                {{if $photo}}
-                <div class="gallery-item photo-desktop-{{$idx}}-{{sanitizeClass $placement.Filename}}{{if $.Layout.HasMobileLayout}} desktop-only{{end}} reveal-on-scroll">
-                    <img src="{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$photo.Filename}}"
-                         srcset="{{range $vidx, $variant := $variants.Variants}}{{if $vidx}}, {{end}}{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$variant.Filename}} {{$variant.Width}}w{{end}}"
-                         sizes="{{calculateSizes $originalPlacement}}"
+                {{/* $placement.Filename now contains the 12-char hash ID */}}
+                {{$hashID := $placement.Filename}}
+                <div class="gallery-item photo-desktop-{{$idx}}-{{sanitizeClass $hashID}}{{if $.Layout.HasMobileLayout}} desktop-only{{end}} reveal-on-scroll">
+                    {{/* Build image URLs using the hash-based directory structure */}}
+                    {{/* Structure: /images/{project}/{hashID}/{hashID}-{width}w.webp */}}
+                    {{$baseImageURL := printf "%s/images/%s/%s" (or $.ImageURLPrefix $.BaseURL) $.Project.Slug $hashID}}
+                    <img src="{{$baseImageURL}}/{{$hashID}}-800w.webp"
+                         srcset="{{$baseImageURL}}/{{$hashID}}-480w.webp 480w, {{$baseImageURL}}/{{$hashID}}-800w.webp 800w, {{$baseImageURL}}/{{$hashID}}-1200w.webp 1200w, {{$baseImageURL}}/{{$hashID}}-1600w.webp 1600w"
+                         sizes="{{calculateSizes $placement}}"
                          alt="Photo {{add $idx 1}}"
                          {{if lt $idx 6}}loading="eager"{{else}}loading="lazy"{{end}}>
                 </div>
-                {{end}}
                 {{end}}
                 
                 {{/* Render mobile placements if custom mobile layout exists */}}
                 {{if .Layout.HasMobileLayout}}
                 {{range $idx, $placement := .Layout.MobilePlacements}}
-                {{$photo := index $.PhotoMap $placement.Filename}}
-                {{$originalPlacement := index $.OriginalLayout.MobilePlacements $idx}}
-                {{$variants := index $.VariantsMap $originalPlacement.Filename}}
-                {{if $photo}}
-                <div class="gallery-item photo-mobile-{{$idx}}-{{sanitizeClass $placement.Filename}} mobile-only reveal-on-scroll">
-                    <img src="{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$photo.Filename}}"
-                         srcset="{{range $vidx, $variant := $variants.Variants}}{{if $vidx}}, {{end}}{{$.BaseURL}}/static/images/{{$.Project.Slug}}/{{$variant.Filename}} {{$variant.Width}}w{{end}}"
+                {{/* $placement.Filename now contains the 12-char hash ID */}}
+                {{$hashID := $placement.Filename}}
+                <div class="gallery-item photo-mobile-{{$idx}}-{{sanitizeClass $hashID}} mobile-only reveal-on-scroll">
+                    {{/* Build image URLs using the hash-based directory structure */}}
+                    {{$baseImageURL := printf "%s/images/%s/%s" (or $.ImageURLPrefix $.BaseURL) $.Project.Slug $hashID}}
+                    <img src="{{$baseImageURL}}/{{$hashID}}-800w.webp"
+                         srcset="{{$baseImageURL}}/{{$hashID}}-480w.webp 480w, {{$baseImageURL}}/{{$hashID}}-800w.webp 800w, {{$baseImageURL}}/{{$hashID}}-1200w.webp 1200w"
                          sizes="(max-width: 768px) 100vw, 0px"
                          alt="Photo {{add $idx 1}}"
                          loading="lazy">
                 </div>
-                {{end}}
                 {{end}}
                 {{end}}
             </div>
@@ -194,6 +190,6 @@
         <p>&copy; {{.Copyright}}</p>
     </footer>
     
-    <script src="{{.BaseURL}}/static/js/site.js"></script>
+    <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
 </body>
 </html>

@@ -12,29 +12,10 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.lorenzomilicia.dev/photography-portfolio-builder/assets"
 	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/builder"
-	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/generator"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		printUsage()
-		os.Exit(1)
-	}
-
-	command := os.Args[1]
-
-	switch command {
-	case "builder", "server":
-		runBuilder()
-	case "generate":
-		runGenerate()
-	case "serve":
-		runServe()
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", command)
-		printUsage()
-		os.Exit(1)
-	}
+	Execute()
 }
 
 func printUsage() {
@@ -102,79 +83,6 @@ func runBuilder() {
 		Msg("Server listening")
 
 	if err := http.ListenAndServe(addr, mux); err != nil {
-		log.Fatal().Err(err).Msg("Server failed")
-	}
-}
-
-func runGenerate() {
-	fs := flag.NewFlagSet("generate", flag.ExitOnError)
-	baseURL := fs.String("base-url", "", "Base URL for the site (e.g., '' for root or '/preview' for local preview)")
-	outputDir := fs.String("output", "output", "Output directory for generated site")
-	contentDir := fs.String("content", "content", "Content directory")
-	debug := fs.Bool("debug", false, "Enable debug logging")
-	fs.Parse(os.Args[2:])
-
-	setupLogging(*debug)
-	log.Info().Msg("Starting static site generation")
-
-	// Get absolute paths
-	workDir, err := os.Getwd()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to get working directory")
-	}
-
-	absContentDir := filepath.Join(workDir, *contentDir)
-	absOutputDir := filepath.Join(workDir, *outputDir)
-
-	log.Info().
-		Str("contentDir", absContentDir).
-		Str("outputDir", absOutputDir).
-		Str("baseURL", *baseURL).
-		Msg("Generation settings")
-
-	// Create generator
-	gen := generator.NewGenerator(absContentDir, absOutputDir, assets.TemplatesFS, assets.StaticFS)
-
-	// Generate site
-	if err := gen.Generate(*baseURL); err != nil {
-		log.Fatal().Err(err).Msg("Generation failed")
-	}
-
-	log.Info().Str("outputDir", filepath.Join(absOutputDir, "public")).Msg("Site generated successfully")
-}
-
-func runServe() {
-	fs := flag.NewFlagSet("serve", flag.ExitOnError)
-	port := fs.Int("port", 8000, "Port to serve on")
-	dir := fs.String("dir", "output/public", "Directory to serve")
-	fs.Parse(os.Args[2:])
-
-	setupLogging(false)
-
-	// Get absolute path
-	workDir, err := os.Getwd()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to get working directory")
-	}
-
-	serveDir := filepath.Join(workDir, *dir)
-
-	// Check if directory exists
-	if _, err := os.Stat(serveDir); os.IsNotExist(err) {
-		log.Fatal().Str("dir", serveDir).Msg("Directory does not exist. Run 'generate' first.")
-	}
-
-	// Create file server
-	fileServer := http.FileServer(http.Dir(serveDir))
-	http.Handle("/", fileServer)
-
-	addr := fmt.Sprintf(":%d", *port)
-	log.Info().
-		Str("address", fmt.Sprintf("http://localhost%s", addr)).
-		Str("directory", serveDir).
-		Msg("Serving static files")
-
-	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal().Err(err).Msg("Server failed")
 	}
 }

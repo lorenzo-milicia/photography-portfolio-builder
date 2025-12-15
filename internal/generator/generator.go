@@ -7,38 +7,41 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/content"
-	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/images"
 )
 
 // Generator handles static site generation
 type Generator struct {
 	contentMgr     *content.Manager
-	imageProcessor *images.Processor
 	outputDir      string
 	templatesFS    fs.FS
 	staticFS       fs.FS
 	templates      *template.Template
 	baseURL        string
+	imageURLPrefix string
 }
 
 // NewGenerator creates a new site generator
 func NewGenerator(contentDir, outputDir string, templatesFS, staticFS fs.FS) *Generator {
-	cacheDir := filepath.Join(outputDir, ".cache")
 	return &Generator{
-		contentMgr:     content.NewManager(contentDir),
-		imageProcessor: images.NewProcessor(cacheDir),
-		outputDir:      outputDir,
-		templatesFS:    templatesFS,
-		staticFS:       staticFS,
+		contentMgr:  content.NewManager(contentDir),
+		outputDir:   outputDir,
+		templatesFS: templatesFS,
+		staticFS:    staticFS,
 	}
 }
 
-// Generate generates the complete static site with the given base URL prefix
-func (g *Generator) Generate(baseURL string) error {
+// Generate generates the complete static site with the given base URL prefix and optional image URL prefix
+func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 	g.baseURL = baseURL
+	g.imageURLPrefix = imageURLPrefix
+
+	// Capture build timestamp for cache busting
+	buildTimestamp := time.Now().Unix()
+
 	log.Debug().Msg("Loading site templates")
 
 	// Create template with helper functions
@@ -87,8 +90,8 @@ func (g *Generator) Generate(baseURL string) error {
 	}
 	g.templates = tmpl
 
-	// Create output directory
-	publicDir := filepath.Join(g.outputDir, "public")
+	// Create output directory (use the root of the provided outputDir)
+	publicDir := g.outputDir
 	if err := os.MkdirAll(publicDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
@@ -111,20 +114,20 @@ func (g *Generator) Generate(baseURL string) error {
 
 	// Generate index page
 	log.Debug().Msg("Generating index page")
-	if err := g.generateIndex(projects); err != nil {
+	if err := g.generateIndex(projects, buildTimestamp); err != nil {
 		return fmt.Errorf("failed to generate index: %w", err)
 	}
 
 	// Generate about page
 	log.Debug().Msg("Generating about page")
-	if err := g.generateAbout(); err != nil {
+	if err := g.generateAbout(buildTimestamp); err != nil {
 		return fmt.Errorf("failed to generate about: %w", err)
 	}
 
 	// Generate project pages
 	for _, project := range projects {
 		log.Debug().Str("slug", project.Slug).Str("title", project.Title).Msg("Generating project page")
-		if err := g.generateProjectPage(project); err != nil {
+		if err := g.generateProjectPage(project, buildTimestamp); err != nil {
 			return fmt.Errorf("failed to generate project %s: %w", project.Slug, err)
 		}
 	}
@@ -141,8 +144,8 @@ func (g *Generator) Generate(baseURL string) error {
 }
 
 // generateIndex generates the main index page
-func (g *Generator) generateIndex(projects []*content.ProjectMetadata) error {
-	publicDir := filepath.Join(g.outputDir, "public")
+func (g *Generator) generateIndex(projects []*content.ProjectMetadata, buildTimestamp int64) error {
+	publicDir := g.outputDir
 	indexPath := filepath.Join(publicDir, "index.html")
 
 	file, err := os.Create(indexPath)
@@ -174,12 +177,13 @@ func (g *Generator) generateIndex(projects []*content.ProjectMetadata) error {
 	}
 
 	data := map[string]interface{}{
-		"Projects":      projects,
-		"BaseURL":       g.baseURL,
-		"Copyright":     siteMeta.Copyright,
-		"WebsiteName":   siteMeta.WebsiteName,
-		"LogoPrimary":   siteMeta.LogoPrimary,
-		"LogoSecondary": siteMeta.LogoSecondary,
+		"Projects":       projects,
+		"BaseURL":        g.baseURL,
+		"Copyright":      siteMeta.Copyright,
+		"WebsiteName":    siteMeta.WebsiteName,
+		"LogoPrimary":    siteMeta.LogoPrimary,
+		"LogoSecondary":  siteMeta.LogoSecondary,
+		"BuildTimestamp": buildTimestamp,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "index.html", data); err != nil {
@@ -190,8 +194,8 @@ func (g *Generator) generateIndex(projects []*content.ProjectMetadata) error {
 }
 
 // generateAbout generates the about page
-func (g *Generator) generateAbout() error {
-	publicDir := filepath.Join(g.outputDir, "public")
+func (g *Generator) generateAbout(buildTimestamp int64) error {
+	publicDir := g.outputDir
 	aboutDir := filepath.Join(publicDir, "about")
 
 	if err := os.MkdirAll(aboutDir, 0755); err != nil {
@@ -243,14 +247,15 @@ func (g *Generator) generateAbout() error {
 	}
 
 	data := map[string]interface{}{
-		"BaseURL":       g.baseURL,
-		"WebsiteName":   siteMeta.WebsiteName,
-		"LogoPrimary":   siteMeta.LogoPrimary,
-		"LogoSecondary": siteMeta.LogoSecondary,
-		"AllProjects":   projects,
-		"About":         siteMeta.About,
-		"Contact":       siteMeta.Contact,
-		"Copyright":     siteMeta.Copyright,
+		"BaseURL":        g.baseURL,
+		"WebsiteName":    siteMeta.WebsiteName,
+		"LogoPrimary":    siteMeta.LogoPrimary,
+		"LogoSecondary":  siteMeta.LogoSecondary,
+		"AllProjects":    projects,
+		"About":          siteMeta.About,
+		"Contact":        siteMeta.Contact,
+		"Copyright":      siteMeta.Copyright,
+		"BuildTimestamp": buildTimestamp,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "about.html", data); err != nil {
@@ -261,8 +266,8 @@ func (g *Generator) generateAbout() error {
 }
 
 // generateProjectPage generates a single project page
-func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error {
-	publicDir := filepath.Join(g.outputDir, "public")
+func (g *Generator) generateProjectPage(project *content.ProjectMetadata, buildTimestamp int64) error {
+	publicDir := g.outputDir
 	projectDir := filepath.Join(publicDir, project.Slug)
 
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
@@ -308,71 +313,9 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error 
 		}
 	}
 
-	// Optimize and copy photos to output (must be done before generating HTML)
-	variantsMap, err := g.optimizeProjectPhotos(project.Slug, layout)
-	if err != nil {
-		return fmt.Errorf("failed to optimize photos: %w", err)
-	}
-
-	// Create a map from original filename to variants for template use
-	originalToVariants := make(map[string]*images.ImageVariants)
-	for originalName, variants := range variantsMap {
-		originalToVariants[originalName] = variants
-	}
-
-	// Update layout with optimized filenames and create photo info map
-	optimizedLayout := &content.LayoutConfig{
-		GridWidth:        layout.GridWidth,
-		Placements:       make([]content.PhotoPlacement, len(layout.Placements)),
-		MobileGridWidth:  layout.MobileGridWidth,
-		MobilePlacements: make([]content.PhotoPlacement, len(layout.MobilePlacements)),
-	}
-	optimizedPhotoMap := make(map[string]*content.PhotoInfo)
-
-	for i, placement := range layout.Placements {
-		variants, ok := variantsMap[placement.Filename]
-		if !ok || variants == nil || len(variants.Variants) == 0 {
-			return fmt.Errorf("no variants generated for %s", placement.Filename)
-		}
-
-		// Use the largest variant as the default filename
-		largestVariant := variants.Variants[len(variants.Variants)-1]
-
-		optimizedLayout.Placements[i] = content.PhotoPlacement{
-			Filename: largestVariant.Filename,
-			Position: placement.Position,
-		}
-
-		// Create photo info with responsive variants
-		if photo, ok := photoMap[placement.Filename]; ok {
-			newPhoto := *photo // Copy
-			newPhoto.Filename = largestVariant.Filename
-			optimizedPhotoMap[largestVariant.Filename] = &newPhoto
-		}
-	}
-
-	// Process mobile placements if they exist
-	for i, placement := range layout.MobilePlacements {
-		variants, ok := variantsMap[placement.Filename]
-		if !ok || variants == nil || len(variants.Variants) == 0 {
-			return fmt.Errorf("no variants generated for mobile placement %s", placement.Filename)
-		}
-
-		largestVariant := variants.Variants[len(variants.Variants)-1]
-		optimizedLayout.MobilePlacements[i] = content.PhotoPlacement{
-			Filename: largestVariant.Filename,
-			Position: placement.Position,
-		}
-
-		// Add mobile-only photos to the photo map if not already present
-		if _, exists := optimizedPhotoMap[largestVariant.Filename]; !exists {
-			if photo, ok := photoMap[placement.Filename]; ok {
-				newPhoto := *photo // Copy
-				newPhoto.Filename = largestVariant.Filename
-				optimizedPhotoMap[largestVariant.Filename] = &newPhoto
-			}
-		}
-	}
+	// Layout now contains hash IDs (12 chars) as filenames
+	// No image processing needed - images are pre-processed by `images process` command
+	// We just use the hash IDs from layout to construct image URLs
 
 	// Create project page
 	pagePath := filepath.Join(projectDir, "index.html")
@@ -407,16 +350,16 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata) error 
 	data := map[string]interface{}{
 		"Project":        project,
 		"Photos":         photos,
-		"PhotoMap":       optimizedPhotoMap,
-		"Layout":         optimizedLayout,
-		"OriginalLayout": layout, // Keep original for variant lookup
-		"VariantsMap":    originalToVariants,
+		"PhotoMap":       photoMap,
+		"Layout":         layout,
 		"BaseURL":        g.baseURL,
+		"ImageURLPrefix": g.imageURLPrefix,
 		"AllProjects":    projects,
 		"WebsiteName":    siteMeta.WebsiteName,
 		"LogoPrimary":    siteMeta.LogoPrimary,
 		"LogoSecondary":  siteMeta.LogoSecondary,
 		"Copyright":      siteMeta.Copyright,
+		"BuildTimestamp": buildTimestamp,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "project.html", data); err != nil {
@@ -499,35 +442,37 @@ func validateLayout(layout *content.LayoutConfig) error {
 }
 
 // optimizeProjectPhotos optimizes and copies project photos to the output directory
-// Returns a map from original filenames to image variants
-func (g *Generator) optimizeProjectPhotos(slug string, layout *content.LayoutConfig) (map[string]*images.ImageVariants, error) {
-	sourceDir := g.contentMgr.ProjectPhotosDir(slug)
-	destDir := filepath.Join(g.outputDir, "public", "static", "images", slug)
+// getImagePath constructs the full image URL with optional prefix
+// hashID is the 12-character hash prefix, filename is the variant file (e.g., "hash-480w.webp")
+func (g *Generator) getImagePath(slug string, hashID string, filename string) string {
+	// New structure: /static/images/{project}/{hashID}/{filename}
+	relPath := fmt.Sprintf("/static/images/%s/%s/%s", slug, hashID, filename)
 
-	// Use the image processor to optimize images based on layout
-	variantsMap, err := g.imageProcessor.ProcessProjectImages(sourceDir, destDir, layout)
-	if err != nil {
-		return nil, fmt.Errorf("failed to process images: %w", err)
+	if g.imageURLPrefix != "" {
+		// External hosting: prefix + relPath
+		return g.imageURLPrefix + relPath
 	}
 
-	totalVariants := 0
-	for _, variants := range variantsMap {
-		totalVariants += len(variants.Variants)
+	// Local hosting: baseURL + relPath
+	return g.baseURL + relPath
+}
+
+// getThumbnailPath constructs the thumbnail URL
+func (g *Generator) getThumbnailPath(slug string, filename string) string {
+	// Thumbnails are in /static/images/{project}/.thumbs/{filename}
+	relPath := fmt.Sprintf("/static/images/%s/.thumbs/%s", slug, filename)
+
+	if g.imageURLPrefix != "" {
+		return g.imageURLPrefix + relPath
 	}
 
-	log.Info().
-		Str("project", slug).
-		Int("images", len(variantsMap)).
-		Int("variants", totalVariants).
-		Msg("Optimized project images")
-
-	return variantsMap, nil
+	return g.baseURL + relPath
 }
 
 // copyStaticAssets copies static assets (CSS, JS) to output
 func (g *Generator) copyStaticAssets() error {
-	// Create CSS directory
-	cssDir := filepath.Join(g.outputDir, "public", "static", "css")
+	// Create CSS directory under the output root
+	cssDir := filepath.Join(g.outputDir, "static", "css")
 	if err := os.MkdirAll(cssDir, 0755); err != nil {
 		return fmt.Errorf("failed to create css directory: %w", err)
 	}
@@ -547,8 +492,8 @@ func (g *Generator) copyStaticAssets() error {
 		log.Debug().Str("dest", cssPath).Msg("Copied site CSS")
 	}
 
-	// Create JS directory
-	jsDir := filepath.Join(g.outputDir, "public", "static", "js")
+	// Create JS directory under the output root
+	jsDir := filepath.Join(g.outputDir, "static", "js")
 	if err := os.MkdirAll(jsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create js directory: %w", err)
 	}

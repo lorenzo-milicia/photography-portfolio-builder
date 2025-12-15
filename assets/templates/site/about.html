@@ -12,7 +12,7 @@
     <meta property="og:description" content="{{if .About}}{{range $i, $p := .About.Paragraphs}}{{if eq $i 0}}{{$p}}{{end}}{{end}}{{else}}Learn more about the photographer behind {{.WebsiteName}}.{{end}}">
     {{if .BaseURL}}<meta property="og:url" content="{{.BaseURL}}/about/">{{end}}
     
-    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
+    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css?v={{.BuildTimestamp}}">
 </head>
 <body>
     {{template "navbar" .}}
@@ -90,6 +90,6 @@
         <p>&copy; {{.Copyright}}</p>
     </footer>
     
-    <script src="{{.BaseURL}}/static/js/site.js"></script>
+    <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
 </body>
 </html>

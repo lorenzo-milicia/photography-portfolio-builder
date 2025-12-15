@@ -13,7 +13,7 @@
     <meta property="og:description" content="Photography portfolio showcasing creative projects and photographic work.">
     {{if .BaseURL}}<meta property="og:url" content="{{.BaseURL}}/">{{end}}
     
-    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css">
+    <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css?v={{.BuildTimestamp}}">
 </head>
 
 <body>
@@ -51,7 +51,7 @@
         <p>&copy; {{.Copyright}}</p>
     </footer>
     
-    <script src="{{.BaseURL}}/static/js/site.js"></script>
+    <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
 </body>
 
 </html>
