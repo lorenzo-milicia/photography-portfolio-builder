@@ -560,7 +560,7 @@ p {
 }
 
 .gallery-grid {
-    padding: 0 2rem 4rem;
+    padding: 0 0 4rem;
 }
 
 .gallery-item {
@@ -1164,7 +1164,7 @@ p {
     }
 
     .gallery-grid {
-        padding: 0 1rem 2rem;
+        padding: 0 0 2rem;
     }
 
     /* About Page */
