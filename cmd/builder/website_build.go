@@ -27,6 +27,16 @@ var websiteBuildCmd = &cobra.Command{
 			fmt.Println("Using local images (no host specified)")
 		}
 
+		// If host not provided via flag, allow environment variable override
+		if host == "" {
+			// Prefer IMAGE_HOST, fall back to IMAGE_URL_PREFIX for backwards compatibility
+			if v := os.Getenv("IMAGE_HOST"); v != "" {
+				host = v
+			} else if v := os.Getenv("IMAGE_URL_PREFIX"); v != "" {
+				host = v
+			}
+		}
+
 		// Create generator
 		gen := generator.NewGenerator(contentDirCLI, outputDirCLI, assets.TemplatesFS, assets.StaticFS)
 
