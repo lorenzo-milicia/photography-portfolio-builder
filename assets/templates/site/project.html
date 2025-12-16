@@ -92,7 +92,7 @@
             
             /* Use contain for mobile to prevent cropping */
             .mobile-only img {
-                object-fit: contain;
+                object-fit: cover;
             }
             
             /* Mobile grid positioning */
@@ -121,7 +121,7 @@
             }
             
             .gallery-item img {
-                object-fit: contain;
+                object-fit: cover;
                 position: relative;
             }
             {{end}}
@@ -155,7 +155,7 @@
                     {{/* Structure: /images/{project}/{hashID}/{hashID}-{width}w.webp */}}
                     {{$baseImageURL := printf "%s/images/%s/%s" (or $.ImageURLPrefix $.BaseURL) $.Project.Slug $hashID}}
                     <img src="{{$baseImageURL}}/{{$hashID}}-800w.webp"
-                         srcset="{{$baseImageURL}}/{{$hashID}}-480w.webp 480w, {{$baseImageURL}}/{{$hashID}}-800w.webp 800w, {{$baseImageURL}}/{{$hashID}}-1200w.webp 1200w, {{$baseImageURL}}/{{$hashID}}-1600w.webp 1600w"
+                         srcset="{{$baseImageURL}}/{{$hashID}}-480w.webp 480w, {{$baseImageURL}}/{{$hashID}}-800w.webp 800w, {{$baseImageURL}}/{{$hashID}}-1200w.webp 1200w, {{$baseImageURL}}/{{$hashID}}-1920w.webp 1920w"
                          sizes="{{calculateSizes $placement}}"
                          alt="Photo {{add $idx 1}}"
                          {{if lt $idx 6}}loading="eager"{{else}}loading="lazy"{{end}}>
@@ -172,7 +172,7 @@
                     {{$baseImageURL := printf "%s/images/%s/%s" (or $.ImageURLPrefix $.BaseURL) $.Project.Slug $hashID}}
                     <img src="{{$baseImageURL}}/{{$hashID}}-800w.webp"
                          srcset="{{$baseImageURL}}/{{$hashID}}-480w.webp 480w, {{$baseImageURL}}/{{$hashID}}-800w.webp 800w, {{$baseImageURL}}/{{$hashID}}-1200w.webp 1200w"
-                         sizes="(max-width: 768px) 100vw, 0px"
+                         sizes="{{calculateMobileSizes $placement $.Layout.MobileGridWidth}}"
                          alt="Photo {{add $idx 1}}"
                          loading="lazy">
                 </div>

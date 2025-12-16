@@ -549,13 +549,13 @@
             <h3>Available Photos</h3>
             <div class="photo-list" id="photo-list">
                 {{range .Photos}}
-                <div class="photo-list-item" data-filename="{{.Filename}}">
+                <div class="photo-list-item" data-hash-id="{{.HashID}}">
                     <img src="{{.ThumbPath}}" alt="{{.Filename}}">
                     <div class="photo-list-item-footer">
                         <div class="photo-name" title="{{.Filename}}">{{.Filename}}</div>
                         <div style="font-size: 0.65rem; color: var(--gray-light);">{{.RatioWidth}}:{{.RatioHeight}}
                         </div>
-                        <button class="btn-add" data-filename="{{.Filename}}">
+                        <button class="btn-add" data-hash-id="{{.HashID}}">
                             + Add
                         </button>
                     </div>
@@ -614,7 +614,7 @@
         const photosArray = {{.Photos | json}} || [];
         const photos = {};
         photosArray.forEach(p => {
-            photos[p.filename] = p; // Ensure we map by filename
+            photos[p.hashId] = p; // Map by hashId to match layout.yaml
         });
 
         // Ensure placements are initialized for JS logic (legacy correction)
@@ -792,13 +792,13 @@
                 if (photo) {
                     const img = document.createElement('img');
                     img.src = photo.thumbPath;
-                    img.alt = placement.filename;
+                    img.alt = photo.filename;
                     photoDiv.appendChild(img);
                 }
 
                 const label = document.createElement('div');
                 label.className = 'placed-photo-label';
-                label.textContent = placement.filename;
+                label.textContent = photo ? photo.filename : placement.filename;
                 photoDiv.appendChild(label);
 
                 photoDiv.addEventListener('click', () => selectPlacement(index));
@@ -807,21 +807,21 @@
         }
 
         function updatePhotoList() {
-            const placedFilenames = new Set(placements.map(p => p.filename));
-            const selectedFilename = selectedIndex >= 0 ? placements[selectedIndex]?.filename : null;
+            const placedHashIds = new Set(placements.map(p => p.filename));
+            const selectedHashId = selectedIndex >= 0 ? placements[selectedIndex]?.filename : null;
 
             document.querySelectorAll('.photo-list-item').forEach(item => {
-                const filename = item.dataset.filename;
+                const hashId = item.dataset.hashId;
                 const btn = item.querySelector('.btn-add');
 
                 // Highlight selected photo
-                if (filename === selectedFilename) {
+                if (hashId === selectedHashId) {
                     item.classList.add('selected-in-list');
                 } else {
                     item.classList.remove('selected-in-list');
                 }
 
-                if (placedFilenames.has(filename)) {
+                if (placedHashIds.has(hashId)) {
                     item.classList.add('placed');
                     btn.disabled = true;
                     btn.textContent = '✓ Placed';
@@ -833,7 +833,7 @@
                         if (e.target.closest('.btn-add')) return;
 
                         // Find and select this photo in placements
-                        const index = placements.findIndex(p => p.filename === filename);
+                        const index = placements.findIndex(p => p.filename === hashId);
                         if (index >= 0) {
                             selectPlacement(index);
                         }
@@ -857,7 +857,7 @@
 
             const info = document.getElementById('selected-info');
             info.classList.add('visible');
-            document.getElementById('selected-photo-name').textContent = placement.filename;
+            document.getElementById('selected-photo-name').textContent = photo ? photo.filename : placement.filename;
 
             if (photo) {
                 const width = placement.originalWidth * placement.coefficient;
@@ -912,11 +912,11 @@
             }
         }
 
-        function addPhoto(filename) {
-            console.log('addPhoto called with:', filename);
-            const photo = photos[filename];
+        function addPhoto(hashId) {
+            console.log('addPhoto called with:', hashId);
+            const photo = photos[hashId];
             if (!photo) {
-                console.error('Photo not found:', filename);
+                console.error('Photo not found:', hashId);
                 return;
             }
 
@@ -950,7 +950,7 @@
             }
 
             placements.push({
-                filename: filename,
+                filename: hashId,
                 originalWidth: finalOriginalWidth,
                 originalHeight: finalOriginalHeight,
                 coefficient: coefficient,
@@ -1341,11 +1341,11 @@
 
         // Attach add button listeners
         document.querySelectorAll('.btn-add').forEach(btn => {
-            console.log('Attaching listener to button for:', btn.dataset.filename);
+            console.log('Attaching listener to button for:', btn.dataset.hashId);
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
-                console.log('Add button clicked for:', this.dataset.filename);
-                addPhoto(this.dataset.filename);
+                console.log('Add button clicked for:', this.dataset.hashId);
+                addPhoto(this.dataset.hashId);
             });
         });
 

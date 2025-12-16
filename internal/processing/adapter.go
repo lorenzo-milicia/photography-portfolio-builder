@@ -43,17 +43,18 @@ func (f *FileDestination) Exists(filename string) bool {
 }
 
 // MultiFileDestination writes normal variants into the provided Dir (project directory)
-// and writes thumbnails into a central .thumbs directory under Root.
+// and writes thumbnails into a .thumbs directory under SourceDir (the source photos directory).
 type MultiFileDestination struct {
-	Dir  string
-	Root string
+	Dir       string
+	Root      string
+	SourceDir string
 }
 
 func (m *MultiFileDestination) Create(filename string) (io.WriteCloser, error) {
 	var fullPath string
 	if len(filename) >= 6 && filename[:6] == "thumb-" {
-		// thumbs go into Root/.thumbs
-		fullPath = filepath.Join(m.Root, ".thumbs", filename)
+		// thumbs go into SourceDir/.thumbs (alongside source photos)
+		fullPath = filepath.Join(m.SourceDir, ".thumbs", filename)
 	} else {
 		fullPath = filepath.Join(m.Dir, filename)
 	}
@@ -66,7 +67,7 @@ func (m *MultiFileDestination) Create(filename string) (io.WriteCloser, error) {
 func (m *MultiFileDestination) Exists(filename string) bool {
 	var path string
 	if len(filename) >= 6 && filename[:6] == "thumb-" {
-		path = filepath.Join(m.Root, ".thumbs", filename)
+		path = filepath.Join(m.SourceDir, ".thumbs", filename)
 	} else {
 		path = filepath.Join(m.Dir, filename)
 	}

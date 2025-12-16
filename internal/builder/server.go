@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -25,8 +26,8 @@ type Server struct {
 	outputDir  string
 }
 
-// NewServer creates a new builder server
-func NewServer(templatesFS, staticFS fs.FS, contentDir, outputDir string) (*Server, error) {
+// NewServer creates a new builder server with content and photos in separate directories
+func NewServer(templatesFS, staticFS fs.FS, contentDir, photosDir, outputDir string) (*Server, error) {
 	log.Debug().Msg("Loading templates")
 
 	// Create template function map
@@ -49,7 +50,7 @@ func NewServer(templatesFS, staticFS fs.FS, contentDir, outputDir string) (*Serv
 
 	log.Info().Int("templates", len(tmpl.Templates())).Msg("Templates loaded")
 
-	contentMgr := content.NewManager(contentDir)
+	contentMgr := content.NewManagerWithPhotosDir(contentDir, photosDir)
 	gen := generator.NewGenerator(contentDir, outputDir, templatesFS, staticFS)
 
 	return &Server{
@@ -68,13 +69,35 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("/static/builder/", http.StripPrefix("/static/builder/",
 		http.FileServer(http.FS(subFS))))
 
-	// Serve content files (photos)
-	mux.Handle("/content/", http.StripPrefix("/content/",
-		http.FileServer(http.Dir(filepath.Dir(s.contentMgr.ProjectsDir())))))
+	// Serve processed images (including thumbnails) from dist/images directory
+	// This serves: dist/images/{project}/.thumbs/thumb-{hashID}.webp
+	// and dist/images/{project}/{hashID}/{hashID}-{width}w.webp
+	imagesDir := filepath.Join(s.outputDir, "images")
+	mux.Handle("/images/", http.StripPrefix("/images/",
+		http.FileServer(http.Dir(imagesDir))))
 
-	// Serve generated site preview from the configured output root
-	mux.Handle("/preview/", http.StripPrefix("/preview/",
-		http.FileServer(http.Dir(s.outputDir))))
+	// Serve generated site preview from the configured output root.
+	// Serve directory `index.html` without triggering an automatic redirect
+	// (so `/preview/<slug>` and `/preview/<slug>/` both work).
+	previewRoot := http.Dir(s.outputDir)
+	fileServer := http.FileServer(previewRoot)
+	mux.Handle("/preview/", http.StripPrefix("/preview/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Clean the requested path and resolve on disk
+		reqPath := filepath.Clean(r.URL.Path)
+		fullPath := filepath.Join(s.outputDir, reqPath)
+
+		// If the path is a directory and contains index.html, serve it directly
+		if info, err := os.Stat(fullPath); err == nil && info.IsDir() {
+			indexPath := filepath.Join(fullPath, "index.html")
+			if _, err := os.Stat(indexPath); err == nil {
+				http.ServeFile(w, r, indexPath)
+				return
+			}
+		}
+
+		// Fallback to the regular file server behavior
+		fileServer.ServeHTTP(w, r)
+	})))
 
 	// API routes (must be registered before catch-all)
 	mux.HandleFunc("/api/project/create", s.handleProjectCreate)

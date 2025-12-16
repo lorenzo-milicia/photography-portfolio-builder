@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"path/filepath"
 
 	"github.com/chai2010/webp"
 	"github.com/disintegration/imaging"
@@ -16,12 +15,6 @@ import (
 type ImageSource interface {
 	Open() (io.ReadCloser, error)
 	Name() string
-}
-
-// ImageDestination abstracts the writing of an image
-type ImageDestination interface {
-	Create(filename string) (io.WriteCloser, error)
-	Exists(filename string) bool
 }
 
 // ProcessConfig holds configuration for the processor
@@ -69,35 +62,38 @@ func (p *Processor) ComputeHash(src ImageSource) (string, error) {
 }
 
 // ProcessImage processes a single image: hash -> resize -> convert -> save
-func (p *Processor) ProcessImage(src ImageSource, dst ImageDestination) error {
+func (p *Processor) ProcessImage(src ImageSource, dst *Destination) error {
 	// 1. Compute Hash
 	hash, err := p.ComputeHash(src)
 	if err != nil {
 		return err
 	}
 
-	// 2. Check if processing is needed
-	photoDir := hash[:12]
+	hashID := hash[:12]
+
+	// 2. Check if processing is needed (skip if all files exist and not forcing)
 	if !p.Config.Force {
 		allExist := true
-		// Check variants (now inside photoDir)
+
+		// Check all variant files
 		for _, width := range p.Config.Widths {
-			filename := filepath.Join(photoDir, fmt.Sprintf("%s-%dw.webp", hash[:12], width))
-			if !dst.Exists(filename) {
+			filename := fmt.Sprintf("%s-%dw.webp", hashID, width)
+			if !dst.VariantExists(hashID, filename) {
 				allExist = false
 				break
 			}
 		}
-		// Check thumbnail if enabled (top-level, routed to .thumbs by destination)
+
+		// Check thumbnail if enabled
 		if allExist && p.Config.GenerateThumbnails {
-			thumbFilename := fmt.Sprintf("thumb-%s.webp", hash[:12])
-			if !dst.Exists(thumbFilename) {
+			thumbFilename := fmt.Sprintf("thumb-%s.webp", hashID)
+			if !dst.ThumbnailExists(thumbFilename) {
 				allExist = false
 			}
 		}
 
 		if allExist {
-			// Skip processing
+			// All files exist, skip processing
 			return nil
 		}
 	}
@@ -114,33 +110,36 @@ func (p *Processor) ProcessImage(src ImageSource, dst ImageDestination) error {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
 
-	// 4. Resize and Save Variants — store variants inside a per-photo directory
+	// 4. Generate and save all image variants
 	for _, width := range p.Config.Widths {
 		// Calculate height maintaining aspect ratio
 		bounds := img.Bounds()
 		ratio := float64(bounds.Dy()) / float64(bounds.Dx())
 		height := int(float64(width) * ratio)
 
-		// Resize
+		// Resize image
 		resized := p.resizeImage(img, width, height)
 
-		// Save as WebP inside the photoDir
-		filename := filepath.Join(photoDir, fmt.Sprintf("%s-%dw.webp", hash[:12], width))
-		if err := p.saveAsWebP(resized, dst, filename); err != nil {
+		// Save variant: dist/images/project/{hashID}/{hashID}-{width}w.webp
+		filename := fmt.Sprintf("%s-%dw.webp", hashID, width)
+		if err := p.saveVariant(resized, dst, hashID, filename); err != nil {
 			return fmt.Errorf("failed to save variant %s: %w", filename, err)
 		}
 	}
 
-	// 5. Generate Thumbnail
+	// 5. Generate and save thumbnail
 	if p.Config.GenerateThumbnails {
 		width := p.Config.ThumbnailWidth
 		bounds := img.Bounds()
 		ratio := float64(bounds.Dy()) / float64(bounds.Dx())
 		height := int(float64(width) * ratio)
 
+		// Resize for thumbnail
 		resized := p.resizeImage(img, width, height)
-		filename := fmt.Sprintf("thumb-%s.webp", hash[:12])
-		if err := p.saveAsWebP(resized, dst, filename); err != nil {
+
+		// Save thumbnail: photos/project/.thumbs/thumb-{hashID}.webp
+		filename := fmt.Sprintf("thumb-%s.webp", hashID)
+		if err := p.saveThumbnail(resized, dst, filename); err != nil {
 			return fmt.Errorf("failed to save thumbnail %s: %w", filename, err)
 		}
 	}
@@ -153,11 +152,26 @@ func (p *Processor) resizeImage(img image.Image, width, height int) image.Image 
 	return imaging.Resize(img, width, height, imaging.Lanczos)
 }
 
-// saveAsWebP saves the image as a WebP file to the destination
-func (p *Processor) saveAsWebP(img image.Image, dst ImageDestination, filename string) error {
-	writer, err := dst.Create(filename)
+// saveVariant saves an image variant to the output directory
+func (p *Processor) saveVariant(img image.Image, dst *Destination, hashID, filename string) error {
+	writer, err := dst.CreateVariant(hashID, filename)
 	if err != nil {
-		return fmt.Errorf("failed to create destination file: %w", err)
+		return fmt.Errorf("failed to create variant file: %w", err)
+	}
+	defer writer.Close()
+
+	if err := webp.Encode(writer, img, &webp.Options{Quality: float32(p.Config.Quality)}); err != nil {
+		return fmt.Errorf("failed to encode WebP: %w", err)
+	}
+
+	return nil
+}
+
+// saveThumbnail saves a thumbnail to the source directory
+func (p *Processor) saveThumbnail(img image.Image, dst *Destination, filename string) error {
+	writer, err := dst.CreateThumbnail(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create thumbnail file: %w", err)
 	}
 	defer writer.Close()
 
