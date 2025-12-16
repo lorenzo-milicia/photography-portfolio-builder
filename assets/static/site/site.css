@@ -573,7 +573,7 @@ p {
 }
 
 .gallery-item img {
-    width: 100%;
+    width: auto;
     height: auto;
     display: block;
     transition: none;

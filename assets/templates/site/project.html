@@ -38,11 +38,12 @@
         .gallery-item {
             position: relative;
             background: #f5f5f5;
+            overflow: hidden;
         }
-        
+
         .gallery-item img {
             width: 100%;
-            height: auto;
+            height: 100%;
             display: block;
             object-fit: cover;
         }
@@ -122,6 +123,8 @@
             }
             
             .gallery-item img {
+                width: 100%;
+                height: auto;
                 object-fit: cover;
                 position: relative;
             }

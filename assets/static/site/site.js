@@ -151,7 +151,7 @@
         if ('IntersectionObserver' in window) {
             const observerOptions = {
                 root: null,
-                rootMargin: '100px 0px 100px 0px',
+                rootMargin: '-50px 0px -50px 0px',
                 threshold: 0
             };
 
