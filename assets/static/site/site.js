@@ -8,10 +8,22 @@
 
     // Mobile menu toggle
     window.toggleMobileMenu = function() {
-        const navbarActions = document.querySelector('.navbar-actions');
-        if (navbarActions) {
-            navbarActions.classList.toggle('mobile-open');
+        const mobileMenuOverlay = document.querySelector('.mobile-menu-overlay');
+        const navbarToggle = document.querySelector('.navbar-toggle');
+        if (mobileMenuOverlay) {
+            mobileMenuOverlay.classList.toggle('open');
         }
+        if (navbarToggle) {
+            navbarToggle.classList.toggle('active');
+        }
+    };
+
+    // Scroll to top of page
+    window.scrollToTop = function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
     };
 
     // Initialize all event listeners when DOM is ready
@@ -27,17 +39,19 @@
     function initializeNavbar() {
         // Close mobile menu when clicking outside
         document.addEventListener('click', function(e) {
-            const navbar = document.querySelector('.main-navbar');
-            const navbarActions = document.querySelector('.navbar-actions');
-
-            if (navbar && navbarActions && 
-                !navbar.contains(e.target) && 
-                navbarActions.classList.contains('mobile-open')) {
-                navbarActions.classList.remove('mobile-open');
+            const mobileMenuOverlay = document.querySelector('.mobile-menu-overlay');
+            const navbarToggle = document.querySelector('.navbar-toggle');
+            
+            if (mobileMenuOverlay && mobileMenuOverlay.classList.contains('open')) {
+                // Check if click is outside the overlay and not on the toggle button
+                if (!mobileMenuOverlay.contains(e.target) && !navbarToggle.contains(e.target)) {
+                    mobileMenuOverlay.classList.remove('open');
+                    navbarToggle.classList.remove('active');
+                }
             }
         });
 
-        // Dropdown click handler
+        // Dropdown click handler (for desktop)
         document.addEventListener('click', function(e) {
             const dropdowns = document.querySelectorAll('.dropdown');
             dropdowns.forEach(dropdown => {
