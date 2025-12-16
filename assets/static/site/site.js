@@ -151,7 +151,7 @@
         if ('IntersectionObserver' in window) {
             const observerOptions = {
                 root: null,
-                rootMargin: '50px 0px 50px 0px',
+                rootMargin: '100px 0px 100px 0px',
                 threshold: 0
             };
 
@@ -161,11 +161,18 @@
                         const item = entry.target;
                         const img = item.querySelector('img');
                         
-                        // Only reveal after image has loaded
+                        // Use decode API to avoid blocking main thread
                         if (img && !img.complete) {
-                            img.addEventListener('load', () => {
-                                item.classList.add('visible');
-                            }, { once: true });
+                            if (img.decode) {
+                                img.decode()
+                                    .then(() => item.classList.add('visible'))
+                                    .catch(() => item.classList.add('visible'));
+                            } else {
+                                // Fallback for browsers without decode API
+                                img.addEventListener('load', () => {
+                                    item.classList.add('visible');
+                                }, { once: true });
+                            }
                         } else {
                             // Image already loaded or no image
                             item.classList.add('visible');
@@ -184,9 +191,15 @@
             revealItems.forEach(item => {
                 const img = item.querySelector('img');
                 if (img && !img.complete) {
-                    img.addEventListener('load', () => {
-                        item.classList.add('visible');
-                    }, { once: true });
+                    if (img.decode) {
+                        img.decode()
+                            .then(() => item.classList.add('visible'))
+                            .catch(() => item.classList.add('visible'));
+                    } else {
+                        img.addEventListener('load', () => {
+                            item.classList.add('visible');
+                        }, { once: true });
+                    }
                 } else {
                     item.classList.add('visible');
                 }
