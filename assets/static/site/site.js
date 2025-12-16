@@ -14,6 +14,14 @@
         }
     };
 
+    // Scroll to top of page
+    window.scrollToTop = function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
+
     // Initialize all event listeners when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
         initializeNavbar();

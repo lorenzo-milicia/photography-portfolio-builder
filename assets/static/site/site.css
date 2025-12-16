@@ -214,8 +214,30 @@ p {
 .current-project {
     font-size: 1.7rem;
     font-weight: 300;
+    line-height: 1.0;
     color: var(--primary);
     white-space: nowrap;
+}
+
+.current-project-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    pointer-events: auto;
+    cursor: pointer;
+    user-select: none;
+}
+
+.scroll-up-arrow {
+    color: var(--text-light);
+    opacity: 0.5;
+    transition: opacity 0.3s ease, color 0.3s ease;
+}
+
+.current-project-wrapper:hover .scroll-up-arrow {
+    opacity: 0.8;
+    color: var(--primary);
 }
 
 .navbar-actions {
