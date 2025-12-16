@@ -17,11 +17,16 @@
         </div>
         {{end}}
         <button class="navbar-toggle" onclick="toggleMobileMenu()" aria-label="Toggle navigation">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            <svg class="hamburger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round" aria-hidden="true">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+            <svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
         </button>
         <div class="navbar-actions">
@@ -44,6 +49,34 @@
                 </div>
             </div>
             <a href="{{.BaseURL}}/about/" class="navbar-link">About</a>
+        </div>
+        <div class="mobile-menu-overlay">
+            <div class="mobile-menu-content">
+                <nav class="mobile-nav">
+                    <a href="{{.BaseURL}}/" class="mobile-nav-link">Home</a>
+                    <div class="mobile-projects-section">
+                        <h3 class="mobile-section-title">Projects</h3>
+                        <div class="mobile-projects-list">
+                            {{if .AllProjects}}
+                            {{range $idx, $project := .AllProjects}}
+                            <a href="{{$.BaseURL}}/{{$project.Slug}}" class="mobile-project-link{{if eq $project.Slug $.Project.Slug}} active{{end}}">
+                                <span class="mobile-project-number">{{printf "%02d" (add $idx 1)}}</span>
+                                <span class="mobile-project-name">{{$project.Title}}</span>
+                            </a>
+                            {{end}}
+                            {{else if .Projects}}
+                            {{range $idx, $project := .Projects}}
+                            <a href="{{$.BaseURL}}/{{$project.Slug}}" class="mobile-project-link{{if eq $project.Slug $.Project.Slug}} active{{end}}">
+                                <span class="mobile-project-number">{{printf "%02d" (add $idx 1)}}</span>
+                                <span class="mobile-project-name">{{$project.Title}}</span>
+                            </a>
+                            {{end}}
+                            {{end}}
+                        </div>
+                    </div>
+                    <a href="{{.BaseURL}}/about/" class="mobile-nav-link">About</a>
+                </nav>
+            </div>
         </div>
     </div>
 </nav>
