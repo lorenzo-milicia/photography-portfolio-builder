@@ -6,40 +6,54 @@ This file contains concise instructions for running and testing the project loca
 
 Quick commands (from repository root):
 
-- Build the binary:
+- Build binary:
 
 ```bash
-go build -o bin/builder ./cmd/builder
+go build -o bin/builder ./cmd
 ```
 
-- Run the interactive builder server (local development):
+- Run interactive builder server (dev):
 
 ```bash
-./bin/builder builder        # runs the VS Code task or ./bin/builder builder
+./bin/builder builder serve -p 8080 -c content -o dist
 ```
 
-- Generate static site for production (no prefix):
+- Process images:
 
 ```bash
-./bin/builder generate
+./bin/builder images process -i photos -o dist/images [--force]
 ```
 
-- Generate static site for preview (prefixes assets with /preview):
+- Upload processed images to S3/R2:
 
 ```bash
-./bin/builder generate --preview
+./bin/builder images upload -i dist/images -b <bucket> -r <region|auto> --endpoint <url> --base-url <public-url>
 ```
 
-Keep this file short. Always use the VS Code tasks (not manual shell commands) to build, generate and run the server — that ensures terminals are managed consistently.
+- Build static website:
+
+```bash
+./bin/builder website build -c content -o dist --host https://cdn.example.com
+```
+
+- Serve generated site for preview:
+
+```bash
+./bin/builder website serve -d dist -p 8000
+```
+
+Prefer using the provided VS Code tasks (Build / Run / Generate / Images) for consistent terminal management.
 
 VS Code task names (open `Terminal -> Run Task`):
 
-- `Build` — compiles `./cmd/builder` (runs `go build`)
-- `Run` — starts the interactive builder server (development)
-- `Run (port)` — same as `Run` but prompts for a port
-- `Generate Site (Production)` — builds and generates production site (root asset paths)
-- `Generate Site (Preview)` — builds and generates preview site (assets prefixed with `/preview`)
-- `Serve Static Site` — serves `output/public` for manual inspection
+- `Build` — compiles the binary (`go build -o bin/builder ./cmd`)
+- `Run` — runs the interactive builder (task starts `./bin/builder builder serve`)
+- `Generate Site (Production)` — runs `website build` and writes to `dist`
+- `Images: Process` — processes `photos` into `dist/images`
+- `Images: Process (force)` — same as above with `--force`
+- `Images: Upload (dry-run)` — simulates uploading `dist/images` to remote
+- `Images: Upload to R2` — uploads `dist/images` to configured R2/S3
+- `Serve Static Site` — serves `dist` for preview (`website serve -d dist -p 8000`)
 
 How to use (recommended):
 
@@ -50,126 +64,49 @@ How to use (recommended):
 5. Use `Generate Site (Production)` to produce final site files with root asset paths.
 6. Use `Serve Static Site` and open `http://localhost:8080/` to inspect `output/public`.
 
-**Note**: Generally there is no need to restart the `Generate Site` task if it's already running, because it uses air for live reload. Air automatically regenerates the site when template, CSS, or content files change.
-
 Note: Avoid manual shell commands — always use VS Code tasks for consistent terminal management.
 
-## **3. Static Site Generation**
-  - Project editor  
-  - Photo browser  
-  - Layout editor  
-  - Generate/preview  
 
-Left sidebar: project list  
-Main area: editor
+## Project — Developer Quickstart
 
----
+Short, focused instructions for local development and common flows.
 
-# ✔️ Acceptance Criteria
-1. Create/edit/delete projects  
-2. Upload/list photos  
-3. Edit layout type + parameters  
-4. Generate complete static website  
-5. Preview site locally  
-6. Responsive images work  
-7. Builder UI functions with htmx  
-8. No Cloudflare/Git code  
+### Tools & Frameworks
+- Language: Go (modules)
+- Frontend: Vanilla CSS + HTMX for builder UI
+- Image processing: internal Go package (processor)
+- Uploads: S3/R2 adapter (uploader)
+- Build tooling: VS Code tasks (predefined) + `go build`
 
----
+### Common Tasks
+- Build binary: `go build -o bin/builder ./cmd`
+- Run builder UI (dev): use VS Code task `Run` or `./bin/builder builder serve`
+- Generate static site (production): use task `Generate Site (Production)` or `./bin/builder website build -o ./dist`
+- Process images: use task `Images: Process` (or `./bin/builder images process -i ./photos -o ./dist/images`)
+- Upload images: use task `Images: Upload` (configurable R2/S3 inputs)
 
-# 📋 Implementation Plan
+Prefer VS Code tasks (Build / Run / Generate / Images) to keep terminals consistent.
 
-## **Phase 1 — Scaffolding**
-- Create directories  
-- Initialize Go modules  
-- Implement basic router + static file serving  
+### Glossary — main areas
+- `cmd/` : CLI entrypoints (`builder`, subcommands)
+- `assets/` : bundled static CSS/JS/templates used by builder and generated site
+- `templates/` : HTML templates for builder UI and generated site
+- `internal/generator` : static site generation logic
+- `internal/images` : image processing utilities
+- `internal/uploader` : S3/R2 upload adapters
+- `internal/content` : models for `project` and `photo` and YAML utilities
+- `projects/`, `photos/` : example content used in development
 
-## **Phase 2 — Content Layer**
-- YAML load/save utilities  
-- Project CRUD  
-- Photo upload handler  
+### Dev flow (recommended)
+1. `Build` (task) to compile the binary.
+2. `Run` (task) to open the builder UI and iterate using HTMX.
+3. Edit templates/CSS; use `Generate Site (Production)` or `Generate Site (Preview)` to validate output.
+4. Use `Images: Process` to create responsive variants, then `Images: Upload` to push to R2/S3 if needed.
 
-## **Phase 3 — Builder UI**
-- Templates: `/templates/builder`  
-- Implement project list, editor, photo list, layout editor  
+### Notes
+- Keep `projects/` and `photos/` synchronized with the builder during development.
+- The builder UI uses HTMX headers; when testing direct links ensure full HTML is returned (not partial).
 
-## **Phase 4 — Image Processing**
-- Thumbnails  
-- Responsive variants  
-- Metadata caching  
-
-## **Phase 5 — Layout Algorithms**
-- Justified layout  
-- Grid layout  
-- Manual grid layout  
-
-## **Phase 6 — Static Generator**
-- Generate index  
-- Generate gallery pages  
-- Copy CSS  
-- Write images  
-
-## **Phase 7 — Preview**
-- Serve `/output/public`  
-- UI button to trigger regeneration  
-
-## **Phase 8 — Polish**
-- Error handling  
-- Logs  
-- UX adjustments  
-
----
-
-# 🧪 Test Cases
-
-### Functional
-- YAML created/updated correctly  
-- Images upload & resize  
-- Layout YAML reads/writes  
-- Generator outputs correct HTML structure  
-
-### UI
-- HTMX partial refresh:  
-  - Photo upload  
-  - Layout update  
-  - Project rename  
-
----
-
-# 🏁 Final Deliverable
-A modular Go application that:
-
-- Provides a full builder interface  
-- Allows managing photos + projects  
-- Supports configurable layout options  
-- Generates a complete static site  
-- Can be previewed locally  
-- Contains no deployment/CI/Git logic  
-
----
-
-# 🔧 Development Workflow
-
-## Running the Application
-**Always use VS Code tasks to run the application** so it stays running in a separate terminal.
-
-- Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on macOS)
-- Type "Run Task" and select "Tasks: Run Task"
-- Choose "Run Builder" to start the server on port 8080
-- Or choose "Run Builder (custom port)" to specify a different port
-
-This keeps the server running in the background while you continue development work.
-
-## Testing Direct Navigation
-When testing routes, ensure that direct navigation to project URLs (e.g., `http://localhost:8080/project/some-slug`) returns the full HTML page, not just partial content. The server checks for the `HX-Request` header to determine whether to return the full page or just the htmx partial.
-
-## Preview vs Production Builds
-The static site generator accepts a `baseURL` parameter that prefixes all asset references and links:
-
-- **Preview Mode**: When generating from the builder UI, the generator uses `/preview` as the base URL. All assets and links are prefixed (e.g., `/preview/static/css/site.css`). The builder serves the preview at `http://localhost:8080/preview/`.
-
-- **Production Mode**: For final deployment, the generator should be called with an empty string `""` as the base URL, resulting in absolute paths from root (e.g., `/static/css/site.css`). This is the correct format for static hosting.
-
-**Important**: The generated HTML in `output/public/` is configured for preview by default. Before deploying to production, regenerate the site with an empty base URL or modify the generator call in `handleGenerate` to use `""` instead of `"/preview"`.
+That's it — short and actionable. Keep this in sync as the project evolves.
 
 

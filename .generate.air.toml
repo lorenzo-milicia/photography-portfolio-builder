@@ -2,7 +2,7 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "go build -o ./tmp/main ./cmd/builder"
+  cmd = "go build -o ./tmp/main ./cmd"
   delay = 1000
   entrypoint = ["./tmp/main", "generate"]
   include_dir = ["content", "internal", "cmd", "assets"]

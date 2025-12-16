@@ -1,260 +1,71 @@
 # Photography Portfolio Builder
 
-A local builder application for creating and managing photography portfolio websites. Built with Go and htmx.
+A minimal CLI tool to manage projects and generate a static photography portfolio website.
 
-## Features
+This README is written for end users — no Go development knowledge required.
 
-- 📷 **Project Management**: Create, edit, and organize photography projects
-- 🖼️ **Photo Upload**: Easy photo upload and management
-- 🎨 **Layout Options**: Choose from justified, grid, or manual grid layouts
-- 🚀 **Static Site Generation**: Generate complete static HTML websites
-- 👁️ **Live Preview**: Preview your generated site before publishing
-- ⚡ **htmx-Powered**: Smooth, dynamic UI with minimal JavaScript
+## Quick start — generate a website
 
-## Architecture
-
-### Directory Structure
-
-```
-photography-portfolio-builder/
-├── cmd/builder/           # Main application entry point
-├── internal/
-│   ├── builder/          # HTTP server and handlers
-│   ├── content/          # Project and photo management
-│   ├── generator/        # Static site generator
-│   ├── images/           # Image processing (resize, thumbnails)
-│   ├── layouts/          # Layout algorithms
-│   └── util/             # Utilities (YAML handling)
-├── templates/
-│   ├── builder/          # Builder UI templates
-│   └── site/             # Static site templates
-├── static/
-│   ├── builder/          # Builder UI assets
-│   └── site/             # Generated site assets
-├── content/
-│   ├── projects/         # Project metadata (YAML)
-│   └── photos/           # Original photos
-└── output/
-    └── public/           # Generated static site
-```
-
-### Core Components
-
-1. **Builder App** (`internal/builder`): Local Go web server with htmx-driven UI
-2. **Content Manager** (`internal/content`): Handles projects and photos
-3. **Image Processor** (`internal/images`): Creates thumbnails and responsive variants
-4. **Layout Engine** (`internal/layouts`): Calculates image positioning
-5. **Site Generator** (`internal/generator`): Produces static HTML output
-
-## Getting Started
-
-### Prerequisites
-
-- Go 1.21 or higher
-- A modern web browser
-
-### Installation
-
-1. Clone the repository:
-```bash
-cd /home/lorenzo/dev/go/src/go.lorenzomilicia.dev/photography-portfolio-builder
-```
-
-2. Build the application:
-```bash
-go build -o bin/builder ./cmd/builder
-```
-
-3. Run the builder:
-```bash
-./bin/builder
-```
-
-4. Open your browser to `http://localhost:8080`
-
-### Command-Line Options
+1) Install the CLI (recommended):
 
 ```bash
-./bin/builder -port 8080  # Specify custom port (default: 8080)
+go install go.lorenzomilicia.dev/photography-portfolio-builder/cmd@latest
 ```
 
-## Usage
+2) Prepare images (optional):
 
-### Creating a Project
-
-1. Click "**+ New Project**" in the sidebar
-2. Enter project title and description
-3. Click "**Create Project**"
-
-### Managing Photos
-
-1. Select a project from the sidebar
-2. Use the photo upload section to add images
-3. Supported formats: JPG, JPEG, PNG, WebP
-4. Photos are automatically organized by project
-
-### Configuring Layout
-
-Each project supports three layout types:
-
-#### Justified Layout
-- Photos arranged in rows with equal height
-- Parameters:
-  - **Row Height**: Target height in pixels (100-1000)
-  - **Gap**: Space between images in pixels (0-100)
-
-#### Grid Layout
-- Photos arranged in a responsive grid
-- Parameters:
-  - **Columns**: Number of columns (1-12)
-  - **Gap**: Space between images in pixels (0-100)
-
-#### Manual Grid Layout
-- Explicit control over photo positioning
-- Supports custom spans and positioning
-
-### Generating the Site
-
-1. Click "**🚀 Generate Site**" in the sidebar
-2. Wait for generation to complete
-3. Click "**View Preview**" to see your site
-4. Find the generated site in `output/public/`
-
-### Preview vs. Final Output
-
-- **Preview**: Access via builder at `/preview/`
-- **Final Output**: Static files in `output/public/` ready for deployment
-
-## Project Data
-
-### Project Metadata (`content/projects/<slug>/meta.yaml`)
-
-```yaml
-title: My Photography Project
-slug: my-photography-project
-description: A collection of landscape photos
-created_at: 2025-12-12T08:00:00Z
-updated_at: 2025-12-12T08:30:00Z
+```bash
+builder images process -i photos -o dist/images
 ```
 
-### Layout Configuration (`content/projects/<slug>/layout.yaml`)
+3) Generate the static site into `dist`:
 
-**Justified Layout:**
-```yaml
-type: justified
-params:
-  row_height: 300
-  gap: 10
+```bash
+builder website build -c content -o dist --host https://cdn.example.com
 ```
 
-**Grid Layout:**
-```yaml
-type: grid
-params:
-  columns: 3
-  gap: 15
+4) Preview the generated site locally:
+
+```bash
+builder website serve -d dist -p 8000
 ```
 
-**Manual Grid Layout:**
-```yaml
-type: manual
-params: {}
+If you prefer not to install, run the same commands with `go run go.lorenzomilicia.dev/photography-portfolio-builder/cmd@latest` as a direct alternative.
+
+## What the commands do
+
+- `images process` — creates thumbnails and responsive image variants from your original photos.
+- `website build` — generates the static HTML and assets into `dist` (references processed images or a remote host).
+- `website serve` — serves the `dist` directory locally for preview.
+
+## Quick tips
+
+- If you do not process images locally, pass `--host` to `website build` pointing to a CDN or public image base URL.
+- Keep your site content in `content/` (projects and metadata). This is the source used to generate the site.
+- `photos/` is optional and used only by `images process`.
+
+## Images upload
+
+After running `images process` you can upload the processed images to an S3-compatible store (Cloudflare R2, AWS S3, etc.) so they can be served from a CDN.
+
+Example (dry run):
+
+```bash
+builder images upload -i dist/images -b <bucket> -r auto --endpoint <url> --base-url https://cdn.example.com --dry-run
 ```
 
-## Generated Site Structure
+Example (real upload):
 
-```
-output/public/
-├── index.html                    # Portfolio homepage
-├── <project-slug>/
-│   └── index.html               # Project gallery page
-└── static/
-    ├── css/
-    │   └── site.css             # Site styles
-    └── images/
-        └── <project-slug>/      # Project photos
+```bash
+builder images upload -i dist/images -b <bucket> -r auto --endpoint <url> --base-url https://cdn.example.com
 ```
 
-## Technical Details
+Flags explained:
+- `-i` : input directory containing processed images (usually `dist/images`).
+- `-b` : target bucket name.
+- `-r` : region (or `auto`); uploader will attempt to autodetect when supported.
+- `--endpoint` : custom S3/R2 endpoint URL (required for R2 or non-AWS providers).
+- `--base-url` : public base URL where uploaded images will be served (used when generating site links).
+- `--dry-run` : perform a trial run without making changes — recommended first.
 
-### Image Processing
-
-- **Thumbnails**: 300px width
-- **Responsive Variants**: 480px, 800px, 1200px widths
-- **Format Support**: JPEG, PNG, WebP
-- **Quality**: 90% JPEG compression
-- **Algorithm**: Catmull-Rom resampling for high quality
-
-### Layout Algorithms
-
-- **Justified**: Dynamic row-based layout maintaining aspect ratios
-- **Grid**: Fixed-column responsive grid
-- **Manual**: Custom positioning with span support
-
-### Static Generation
-
-- Go `html/template` for templating
-- Responsive images with proper sizing
-- Lazy loading for performance
-- SEO-friendly HTML structure
-
-## Development
-
-### Project Structure
-
-The codebase follows Go best practices:
-
-- `cmd/`: Application entry points
-- `internal/`: Private application code
-- `templates/`: HTML templates
-- `static/`: Static assets
-- `content/`: User content storage
-- `output/`: Generated output
-
-### Key Dependencies
-
-- `gopkg.in/yaml.v3`: YAML parsing
-- `golang.org/x/image`: Image processing
-- `htmx.org`: Dynamic UI (CDN)
-
-## Limitations
-
-This builder intentionally does **not** include:
-
-- Git integration
-- Deployment automation
-- CI/CD pipelines
-- Authentication/authorization
-- Multi-user support
-- Database storage
-- Pixel-perfect drag-and-drop editing
-
-These features are out of scope to keep the builder focused and maintainable.
-
-## Future Enhancements
-
-Potential improvements:
-
-- WebP generation for all images
-- Image metadata caching
-- Batch photo upload
-- Layout templates
-- Custom CSS themes
-- Export/import projects
-- Image optimization settings
-
-## Contributing
-
-This is a personal project by Lorenzo Milicia. Feel free to fork and modify for your own use.
-
-## License
-
-This project is provided as-is for personal use.
-
-## Support
-
-For issues or questions, refer to the code documentation or the project instructions in `.github/instructions/project.instructions.md`.
-
----
-
-**Built with ❤️ by Lorenzo Milicia**
+Tip: when you upload images to a CDN, pass the same `--host`/`--base-url` to `website build` so generated pages reference the CDN URLs rather than local `dist` paths.
