@@ -16,6 +16,7 @@ import (
 // Generator handles static site generation
 type Generator struct {
 	contentMgr     *content.Manager
+	contentDir     string
 	outputDir      string
 	templatesFS    fs.FS
 	staticFS       fs.FS
@@ -28,6 +29,7 @@ type Generator struct {
 func NewGenerator(contentDir, outputDir string, templatesFS, staticFS fs.FS) *Generator {
 	return &Generator{
 		contentMgr:  content.NewManager(contentDir),
+		contentDir:  contentDir,
 		outputDir:   outputDir,
 		templatesFS: templatesFS,
 		staticFS:    staticFS,
@@ -183,6 +185,12 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 	log.Debug().Msg("Copying static assets")
 	if err := g.copyStaticAssets(); err != nil {
 		return fmt.Errorf("failed to copy static assets: %w", err)
+	}
+
+	// Copy favicon files
+	log.Debug().Msg("Copying favicon files")
+	if err := g.copyFavicons(); err != nil {
+		return fmt.Errorf("failed to copy favicons: %w", err)
 	}
 
 	log.Info().Msg("Site generation completed")
@@ -558,6 +566,50 @@ func (g *Generator) copyStaticAssets() error {
 			return fmt.Errorf("failed to write site JS: %w", err)
 		}
 		log.Debug().Str("dest", jsPath).Msg("Copied site JS")
+	}
+
+	return nil
+}
+
+// copyFavicons copies favicon files from content directory to output
+func (g *Generator) copyFavicons() error {
+	// Create favicon directory in output
+	faviconDir := filepath.Join(g.outputDir, "favicon")
+	if err := os.MkdirAll(faviconDir, 0755); err != nil {
+		return fmt.Errorf("failed to create favicon directory: %w", err)
+	}
+
+	// List of favicon files to copy
+	faviconFiles := []string{
+		"favicon.svg",
+		"favicon.ico",
+		"favicon-16x16.png",
+		"favicon-32x32.png",
+		"apple-touch-icon.png",
+		"android-chrome-192x192.png",
+		"android-chrome-512x512.png",
+		"site.webmanifest",
+	}
+
+	// Source favicon directory in content
+	srcFaviconDir := filepath.Join(g.contentDir, "favicon")
+
+	// Copy each favicon file
+	for _, filename := range faviconFiles {
+		srcPath := filepath.Join(srcFaviconDir, filename)
+		dstPath := filepath.Join(faviconDir, filename)
+
+		// Check if source file exists
+		if _, err := os.Stat(srcPath); os.IsNotExist(err) {
+			log.Debug().Str("file", filename).Msg("Favicon file not found, skipping")
+			continue
+		}
+
+		// Copy the file
+		if err := copyFile(srcPath, dstPath); err != nil {
+			return fmt.Errorf("failed to copy favicon %s: %w", filename, err)
+		}
+		log.Debug().Str("file", filename).Msg("Copied favicon")
 	}
 
 	return nil
