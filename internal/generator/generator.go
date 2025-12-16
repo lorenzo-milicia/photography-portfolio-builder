@@ -81,6 +81,53 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 			return fmt.Sprintf("(max-width: 768px) 100vw, (max-width: 1024px) %dvw, %dpx",
 				percentage, (colSpan*1400)/12)
 		},
+		"calculateMobileSizes": func(placement content.PhotoPlacement, mobileGridWidth int) string {
+			// Calculate the proper sizes for mobile images
+			// Mobile grid is typically 6 columns, with 0.5rem (8px) gaps between columns
+			// and 0.5rem padding on each side (total 1rem = 16px horizontal padding)
+			colSpan := placement.Position.BottomRightX - placement.Position.TopLeftX + 1
+			if mobileGridWidth == 0 {
+				mobileGridWidth = 6 // default
+			}
+
+			// For mobile devices (<= 768px):
+			// Formula: (100vw - padding - total_gaps) * (colSpan / gridWidth)
+			// Where:
+			//   - padding = 1rem = 16px (0.5rem on each side)
+			//   - total_gaps = (gridWidth - 1) * 0.5rem = (gridWidth - 1) * 8px
+			//   - image_width = colSpan * (available / gridWidth) + (colSpan - 1) * gap
+			//
+			// Simplified CSS calc:
+			// For each column span, the image occupies:
+			//   colSpan/gridWidth of (100vw - 1rem) plus inter-column gaps
+			//   = (colSpan/gridWidth) * (100vw - 1rem) - ((gridWidth - colSpan) / gridWidth) * gaps_between_grid
+			//
+			// Even simpler: Use percentage of (100vw - horizontal_padding)
+			// Then subtract proportional gap space
+
+			// Total gaps in grid: (gridWidth - 1) gaps
+			// Gaps NOT in this image: (gridWidth - colSpan) gaps on the outside
+			// Gaps IN this image: (colSpan - 1) gaps
+			// We want: percentage of viewport minus our share of padding, plus actual gap pixels
+
+			// Simpler approach: percentage of available width
+			// Available = 100vw - 1rem padding
+			// But gaps eat into this: total gaps = (gridWidth - 1) * 0.5rem
+			// For our span: we contain (colSpan-1) gaps = (colSpan-1) * 0.5rem
+
+			// Most accurate formula:
+			// ((100vw - 1rem) - (gridWidth-1)*0.5rem) * (colSpan/gridWidth) + (colSpan-1)*0.5rem
+			// = ((100vw - 1rem) - totalGaps) * ratio + imageGaps
+
+			totalGapsPx := (mobileGridWidth - 1) * 8
+			imageGapsPx := (colSpan - 1) * 8
+
+			// CSS calc formula:
+			// ((100vw - horizontal_padding - total_gaps_space) * colSpan / gridWidth) + gaps_in_image
+			// This gives us the actual pixel width the image will occupy
+			return fmt.Sprintf("(max-width: 768px) calc((100vw - %dpx) * %d / %d + %dpx), 0px",
+				16+totalGapsPx, colSpan, mobileGridWidth, imageGapsPx)
+		},
 	}
 
 	// Load site templates

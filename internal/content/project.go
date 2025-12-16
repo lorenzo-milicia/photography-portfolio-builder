@@ -51,11 +51,23 @@ func (lc *LayoutConfig) HasMobileLayout() bool {
 // Manager handles content operations
 type Manager struct {
 	contentDir string
+	photosDir  string
 }
 
 // NewManager creates a new content manager
 func NewManager(contentDir string) *Manager {
-	return &Manager{contentDir: contentDir}
+	return &Manager{
+		contentDir: contentDir,
+		photosDir:  filepath.Join(contentDir, "photos"),
+	}
+}
+
+// NewManagerWithPhotosDir creates a content manager with a custom photos directory
+func NewManagerWithPhotosDir(contentDir, photosDir string) *Manager {
+	return &Manager{
+		contentDir: contentDir,
+		photosDir:  photosDir,
+	}
 }
 
 // SiteMetadata holds site-level metadata (global settings)
@@ -126,7 +138,7 @@ func (m *Manager) ProjectsDir() string {
 
 // PhotosDir returns the photos directory path
 func (m *Manager) PhotosDir() string {
-	return filepath.Join(m.contentDir, "photos")
+	return m.photosDir
 }
 
 // ProjectDir returns the directory for a specific project

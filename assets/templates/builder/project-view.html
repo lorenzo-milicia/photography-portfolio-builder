@@ -38,7 +38,7 @@
     <div id="photo-gallery">
         {{if .Photos}}
         {{range .Photos}}
-        <div class="photo-item" data-filename="{{.Filename}}">
+        <div class="photo-item" data-hash-id="{{.HashID}}">
             <img src="{{.ThumbPath}}" alt="{{.Filename}}" loading="lazy">
             <div class="photo-info">
                 <span class="photo-name">{{.Filename}}</span>

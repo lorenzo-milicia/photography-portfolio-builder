@@ -1,10 +1,13 @@
 package content
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"image"
 	"image/jpeg"
 	_ "image/png"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +17,8 @@ import (
 
 // PhotoInfo holds information about a photo
 type PhotoInfo struct {
-	Filename    string  `json:"filename"`
+	Filename    string  `json:"filename"` // Original filename
+	HashID      string  `json:"hashId"`   // 12-char hash ID used in layout.yaml and processed images
 	Path        string  `json:"path"`
 	Size        int64   `json:"size"`
 	AspectRatio float64 `json:"aspectRatio"` // width / height (deprecated, use RatioWidth/RatioHeight)
@@ -56,7 +60,12 @@ func (m *Manager) ListPhotos(slug string) ([]*PhotoInfo, error) {
 		}
 
 		photoPath := filepath.Join(photosDir, entry.Name())
-		thumbPath := filepath.Join(thumbsDir, entry.Name())
+
+		// Compute hash ID from photo content
+		hashID, err := computePhotoHash(photoPath)
+		if err != nil {
+			continue // Skip if we can't compute hash
+		}
 
 		// Compute aspect ratio
 		aspectRatio, err := getImageAspectRatio(photoPath)
@@ -67,23 +76,14 @@ func (m *Manager) ListPhotos(slug string) ([]*PhotoInfo, error) {
 		// Convert to integer ratio
 		ratioW, ratioH := getIntegerRatio(aspectRatio)
 
-		// Generate thumbnail if it doesn't exist
-		if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
-			if err := generateThumbnail(photoPath, thumbPath, 400); err != nil {
-				// If thumbnail generation fails, use original
-				thumbPath = photoPath
-			}
-		}
-
-		// Convert thumb path to web URL
-		thumbURL := fmt.Sprintf("/content/photos/%s/.thumbs/%s", slug, entry.Name())
-		// If thumbnail generation failed, use original photo URL
-		if thumbPath == photoPath {
-			thumbURL = fmt.Sprintf("/content/photos/%s/%s", slug, entry.Name())
-		}
+		// Build thumbnail URL - thumbnails are in dist/images/{project}/.thumbs/thumb-{hashID}.webp
+		// The builder server serves /images/ from dist/images/
+		thumbFilename := fmt.Sprintf("thumb-%s.webp", hashID)
+		thumbURL := fmt.Sprintf("/images/%s/.thumbs/%s", slug, thumbFilename)
 
 		photo := &PhotoInfo{
 			Filename:    entry.Name(),
+			HashID:      hashID,
 			Path:        photoPath,
 			Size:        info.Size(),
 			AspectRatio: aspectRatio,
@@ -158,6 +158,23 @@ func abs(x float64) float64 {
 		return -x
 	}
 	return x
+}
+
+// computePhotoHash computes the SHA256 hash (first 12 characters) of a photo file
+func computePhotoHash(photoPath string) (string, error) {
+	file, err := os.Open(photoPath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	fullHash := hex.EncodeToString(hash.Sum(nil))
+	return fullHash[:12], nil
 }
 
 // generateThumbnail creates a compressed thumbnail for the builder UI
