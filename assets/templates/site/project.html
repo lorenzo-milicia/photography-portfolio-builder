@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    {{block "project-head" .}}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Project.Title}} - {{.WebsiteName}}</title>
@@ -18,6 +19,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{.BaseURL}}/favicon/apple-touch-icon.png">
     <link rel="manifest" href="{{.BaseURL}}/favicon/site.webmanifest">
     <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css?v={{.BuildTimestamp}}">
+    {{block "project-styles" .}}
     <style>
         .gallery-wrapper {
             width: 100%;
@@ -136,11 +138,17 @@
             {{end}}
         }
     </style>
+    {{end}}
+    {{end}}
 </head>
 <body>
+    {{block "project-body" .}}
+    {{block "project-navbar" .}}
     {{template "navbar" .}}
+    {{end}}
 
     <div class="project-container">
+        {{block "project-header" .}}
         <!-- Header with Title -->
         <header class="project-header">
             
@@ -151,7 +159,9 @@
                 {{end}}
             </div>
         </header>
+        {{end}}
 
+        {{block "project-gallery" .}}
         {{if or .Layout.Placements .Layout.MobilePlacements}}
         <div class="gallery-wrapper">
             <div class="gallery-grid">
@@ -192,12 +202,18 @@
         {{else}}
         <p class="empty-state">No photos placed in the layout yet.</p>
         {{end}}
+        {{end}}
     </div>
     
+    {{block "project-footer" .}}
     <footer class="home-footer">
         <p>&copy; {{.Copyright}}</p>
     </footer>
+    {{end}}
     
+    {{block "project-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
+    {{end}}
+    {{end}}
 </body>
 </html>
