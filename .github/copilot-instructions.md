@@ -23,7 +23,6 @@ go build -o bin/builder ./cmd
 ```bash
 go test ./...
 ```
-**KNOWN ISSUE:** `internal/processing/processor_test.go:80` type mismatch - pre-existing, ignore unless modifying `internal/processing`
 
 **Pre-commit validation:**
 ```bash
@@ -80,8 +79,6 @@ All commands support `--env <file>` to load environment variables.
 
 ## Common Issues
 
-**Pre-existing test failure:** `processor_test.go:80` type mismatch - ignore unless modifying `internal/processing`
-
 **Build timing:** First build 40-45s, subsequent 1-2s. Wait up to 60s on first build for downloads.
 
 **Missing dirs:** `.gitignore` excludes `/content/`, `/photos/`, `/dist/`, `/output/`. Create if needed: `mkdir -p content dist photos`
@@ -96,7 +93,7 @@ All commands support `--env <file>` to load environment variables.
 
 **Templates (`assets/templates/`):** Edit template → **MUST rebuild** (go:embed) → test with `website build`
 
-**Image processing:** Edit code → rebuild → test: `./bin/builder images process -i photos -o dist/images --force` → fix `processor_test.go` if related
+**Image processing:** Edit code → rebuild → test: `./bin/builder images process -i photos -o dist/images --force`
 
 **Site generation:** Edit code → rebuild → test: `website build` + `website serve` → verify in browser
 
