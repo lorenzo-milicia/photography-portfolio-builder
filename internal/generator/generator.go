@@ -146,28 +146,24 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 
 	// Load override templates if custom templates directory is specified
 	if g.templatesDir != "" {
-		// Check if the templates directory exists
-		if info, err := os.Stat(g.templatesDir); err == nil && info.IsDir() {
-			log.Debug().Str("dir", g.templatesDir).Msg("Loading custom template overrides")
-			
-			// Parse all HTML files from the custom templates directory
-			pattern := filepath.Join(g.templatesDir, "*.html")
-			matches, err := filepath.Glob(pattern)
+		log.Debug().Str("dir", g.templatesDir).Msg("Checking for custom template overrides")
+		
+		// Parse all HTML files from the custom templates directory
+		// filepath.Glob handles non-existent directories gracefully
+		pattern := filepath.Join(g.templatesDir, "*.html")
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			return fmt.Errorf("failed to glob custom templates: %w", err)
+		}
+		
+		if len(matches) > 0 {
+			log.Debug().Int("count", len(matches)).Msg("Found custom template files")
+			tmpl, err = tmpl.ParseGlob(pattern)
 			if err != nil {
-				return fmt.Errorf("failed to glob custom templates: %w", err)
+				return fmt.Errorf("failed to parse custom templates: %w", err)
 			}
-			
-			if len(matches) > 0 {
-				log.Debug().Int("count", len(matches)).Msg("Found custom template files")
-				tmpl, err = tmpl.ParseGlob(pattern)
-				if err != nil {
-					return fmt.Errorf("failed to parse custom templates: %w", err)
-				}
-			} else {
-				log.Debug().Msg("No custom template files found")
-			}
-		} else if err != nil && !os.IsNotExist(err) {
-			log.Warn().Err(err).Str("dir", g.templatesDir).Msg("Failed to access custom templates directory")
+		} else {
+			log.Debug().Msg("No custom template files found")
 		}
 	}
 
