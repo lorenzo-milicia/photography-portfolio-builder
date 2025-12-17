@@ -25,9 +25,7 @@
 
 <body>
     {{block "index-body" .}}
-    {{block "index-navbar" .}}
     {{template "navbar" .}}
-    {{end}}
     <main class="home-container">
         {{block "index-content" .}}
         {{if .Projects}}

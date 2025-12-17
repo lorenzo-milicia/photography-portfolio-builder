@@ -66,10 +66,12 @@ builder website build -c content -o dist --templates /path/to/custom/templates
 
 The base templates define the following overrideable blocks:
 
+**Shared across all pages:**
+- `navbar` — navigation bar (used by all pages)
+
 **index.html** (home page):
 - `index-head` — entire `<head>` section
 - `index-body` — entire `<body>` content
-- `index-navbar` — navigation bar
 - `index-content` — main content area
 - `index-footer` — footer section
 - `index-scripts` — scripts section
@@ -77,7 +79,6 @@ The base templates define the following overrideable blocks:
 **about.html** (about page):
 - `about-head` — entire `<head>` section
 - `about-body` — entire `<body>` content
-- `about-navbar` — navigation bar
 - `about-content` — main content area
 - `about-contact` — contact section
 - `about-footer` — footer section
@@ -87,7 +88,6 @@ The base templates define the following overrideable blocks:
 - `project-head` — entire `<head>` section (excluding styles)
 - `project-styles` — inline styles section
 - `project-body` — entire `<body>` content
-- `project-navbar` — navigation bar
 - `project-header` — project header
 - `project-gallery` — gallery section
 - `project-footer` — footer section
