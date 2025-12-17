@@ -23,16 +23,5 @@ jobs:
     - name: Download dependencies
       run: go mod download
       
-    - name: Build
-      run: go build -v ./...
-      
     - name: Run tests
-      run: go test -v -race -coverprofile=coverage.out ./internal/generator/...
-      
-    - name: Upload coverage
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.out
-        flags: unittests
-        name: codecov-umbrella
-      continue-on-error: true
+      run: go test -v -race -coverprofile=coverage.out ./...
