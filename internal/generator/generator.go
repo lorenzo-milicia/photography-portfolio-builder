@@ -167,7 +167,7 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 				log.Debug().Msg("No custom template files found")
 			}
 		} else if err != nil && !os.IsNotExist(err) {
-			log.Warn().Err(err).Str("dir", g.templatesDir).Msg("Error checking custom templates directory")
+			log.Warn().Err(err).Str("dir", g.templatesDir).Msg("Failed to access custom templates directory")
 		}
 	}
 

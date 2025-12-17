@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -26,7 +27,7 @@ var websiteBuildCmd = &cobra.Command{
 		
 		// Set default templates directory if not provided
 		if templatesDirCLI == "" {
-			templatesDirCLI = contentDirCLI + "/templates"
+			templatesDirCLI = filepath.Join(contentDirCLI, "templates")
 		}
 		fmt.Printf("Templates directory: %s\n", templatesDirCLI)
 		
