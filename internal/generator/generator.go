@@ -137,6 +137,24 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 			return fmt.Sprintf("(max-width: 768px) calc((100vw - %dpx) * %d / %d + %dpx), 0px",
 				16+totalGapsPx, colSpan, mobileGridWidth, imageGapsPx)
 		},
+		"calculateIndexSizes": func(placement content.IndexHeroPlacement) string {
+			// Same logic as calculateSizes but for index hero placements
+			colSpan := placement.Position.BottomRightX - placement.Position.TopLeftX + 1
+			percentage := (colSpan * 100) / 12
+			return fmt.Sprintf("(max-width: 768px) 100vw, (max-width: 1024px) %dvw, %dpx",
+				percentage, (colSpan*1400)/12)
+		},
+		"calculateIndexMobileSizes": func(placement content.IndexHeroPlacement, mobileGridWidth int) string {
+			// Same logic as calculateMobileSizes but for index hero placements
+			colSpan := placement.Position.BottomRightX - placement.Position.TopLeftX + 1
+			if mobileGridWidth == 0 {
+				mobileGridWidth = 6
+			}
+			totalGapsPx := (mobileGridWidth - 1) * 8
+			imageGapsPx := (colSpan - 1) * 8
+			return fmt.Sprintf("(max-width: 768px) calc((100vw - %dpx) * %d / %d + %dpx), 0px",
+				16+totalGapsPx, colSpan, mobileGridWidth, imageGapsPx)
+		},
 	}
 
 	// Load site templates
@@ -292,6 +310,13 @@ func (g *Generator) generateIndex(projects []*content.ProjectMetadata, buildTime
 		projectMap[project.Slug] = project
 	}
 
+	// Load index layout for hero grid (optional)
+	indexLayout, err := g.contentMgr.GetIndexLayout()
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to load index layout, using default")
+		indexLayout = &content.IndexLayoutConfig{GridWidth: 12}
+	}
+
 	data := map[string]interface{}{
 		"Projects":       projects,
 		"BaseURL":        g.baseURL,
@@ -303,6 +328,7 @@ func (g *Generator) generateIndex(projects []*content.ProjectMetadata, buildTime
 		"ProjectHeroes":  projectHeroes,
 		"HeroImageBases": heroImageBases,
 		"ProjectMap":     projectMap,
+		"IndexLayout":    indexLayout,
 		"BuildTimestamp": buildTimestamp,
 	}
 
