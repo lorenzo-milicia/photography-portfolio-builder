@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    {{block "about-head" .}}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About - {{.WebsiteName}}</title>
@@ -18,11 +19,14 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{.BaseURL}}/favicon/apple-touch-icon.png">
     <link rel="manifest" href="{{.BaseURL}}/favicon/site.webmanifest">
     <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css?v={{.BuildTimestamp}}">
+    {{end}}
 </head>
 <body>
+    {{block "about-body" .}}
     {{template "navbar" .}}
 
     <main class="container">
+        {{block "about-content" .}}
         <header class="page-header">
             <h1 class="page-title">{{if .About}}{{.About.Title}}{{else}}About{{end}}</h1>
         </header>
@@ -51,6 +55,7 @@
             {{end}}
         </div>
 
+        {{block "about-contact" .}}
         {{if .Contact}}
         <section class="contact-section">
             <div class="contact-content">
@@ -88,13 +93,20 @@
                 </div>
             </div>
         </section>
-        {{end}}
+        {{end}} {{/* end if .Contact */}}
+        {{end}} {{/* end about-contact */}}
+        {{end}} {{/* end about-content */}}
     </main>
-    
+
+    {{block "about-footer" .}}
     <footer class="home-footer">
         <p>&copy; {{.Copyright}}</p>
     </footer>
-    
+    {{end}} {{/* end about-footer */}}
+
+    {{block "about-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
+    {{end}} {{/* end about-scripts */}}
+    {{end}} {{/* end about-body */}}
 </body>
 </html>

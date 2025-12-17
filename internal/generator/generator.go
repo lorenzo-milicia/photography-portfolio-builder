@@ -20,6 +20,7 @@ type Generator struct {
 	outputDir      string
 	templatesFS    fs.FS
 	staticFS       fs.FS
+	templatesDir   string // Custom templates directory for overrides
 	templates      *template.Template
 	baseURL        string
 	imageURLPrefix string
@@ -34,6 +35,11 @@ func NewGenerator(contentDir, outputDir string, templatesFS, staticFS fs.FS) *Ge
 		templatesFS: templatesFS,
 		staticFS:    staticFS,
 	}
+}
+
+// SetTemplatesDir sets the custom templates directory for overrides
+func (g *Generator) SetTemplatesDir(templatesDir string) {
+	g.templatesDir = templatesDir
 }
 
 // Generate generates the complete static site with the given base URL prefix and optional image URL prefix
@@ -137,6 +143,30 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse site templates: %w", err)
 	}
+
+	// Load override templates if custom templates directory is specified
+	if g.templatesDir != "" {
+		log.Debug().Str("dir", g.templatesDir).Msg("Checking for custom template overrides")
+
+		// Parse all HTML files from the custom templates directory
+		// filepath.Glob returns empty slice for non-existent directories without error
+		pattern := filepath.Join(g.templatesDir, "*.html")
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			return fmt.Errorf("failed to glob custom templates: %w", err)
+		}
+
+		if len(matches) > 0 {
+			log.Debug().Int("count", len(matches)).Msg("Found custom template files")
+			tmpl, err = tmpl.ParseFiles(matches...)
+			if err != nil {
+				return fmt.Errorf("failed to parse custom templates: %w", err)
+			}
+		} else {
+			log.Debug().Msg("No custom template files found")
+		}
+	}
+
 	g.templates = tmpl
 
 	// Create output directory (use the root of the provided outputDir)

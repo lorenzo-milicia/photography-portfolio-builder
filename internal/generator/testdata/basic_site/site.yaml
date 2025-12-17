@@ -1,0 +1,12 @@
+copyright: "2024 Test Portfolio"
+website_name: "Test Portfolio"
+logo_primary: "test"
+logo_secondary: "portfolio"
+about:
+  title: "About Me"
+  paragraphs:
+    - "This is a test portfolio."
+    - "Created for testing purposes."
+contact:
+  email: "test@example.com"
+  website: "https://example.com"
