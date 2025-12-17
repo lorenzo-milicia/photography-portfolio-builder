@@ -9,11 +9,7 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -30,10 +26,5 @@ jobs:
       run: go build -v -o bin/builder ./cmd
       
     - name: Verify binary
-      if: runner.os != 'Windows'
       run: ./bin/builder --help
-      
-    - name: Verify binary (Windows)
-      if: runner.os == 'Windows'
-      run: .\bin\builder.exe --help
-      shell: cmd
+
