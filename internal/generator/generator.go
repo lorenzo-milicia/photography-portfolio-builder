@@ -149,7 +149,7 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 		log.Debug().Str("dir", g.templatesDir).Msg("Checking for custom template overrides")
 
 		// Parse all HTML files from the custom templates directory
-		// filepath.Glob handles non-existent directories gracefully
+		// filepath.Glob returns empty slice for non-existent directories without error
 		pattern := filepath.Join(g.templatesDir, "*.html")
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
