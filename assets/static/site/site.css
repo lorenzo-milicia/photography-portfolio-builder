@@ -669,7 +669,7 @@ p {
 
 .about-content {
     max-width: 800px;
-    margin: 0 auto;
+    margin: 1rem auto;
     line-height: 1.8;
 }
 
@@ -1107,14 +1107,14 @@ p {
         flex-direction: column;
         gap: 0;
         margin: 0;
-        padding-left: 0.5rem;
+        padding-left: 1rem;
     }
 
     .mobile-project-link {
         display: flex;
         align-items: center;
         gap: 1rem;
-        padding: 0.75rem 1rem;
+        padding: 0.75rem 0;
         margin-bottom: 0.5rem;
         text-decoration: none;
         transition: background 0.12s linear, color 0.12s linear;
@@ -1148,6 +1148,7 @@ p {
     .mobile-project-number {
         font-size: 0.875rem;
         font-weight: 400;
+        opacity: 0.6;
         color: var(--text-light);
         font-variant-numeric: tabular-nums;
         letter-spacing: 0.05em;
@@ -1249,6 +1250,42 @@ p {
         padding-top: 2rem;
     }
 
+    .about-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+    }
+
+    .page-language-switcher {
+        display: flex;
+        align-items: baseline;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+        text-transform: lowercase;
+        font-weight: 400;
+    }
+
+    .page-lang-link {
+        color: #999;
+        text-decoration: none;
+        transition: color 0.2s ease;
+        padding: 0.1rem 0.2rem;
+    }
+
+    .page-lang-link:hover {
+        color: var(--text);
+    }
+
+    .page-lang-link.active {
+        color: var(--text);
+    }
+
+    .page-lang-divider {
+        color: #ddd;
+        user-select: none;
+    }
+
     .about-content {
         margin-top: 3rem;
     }
@@ -1283,6 +1320,16 @@ p {
    ============================================================================ */
 
 @media (max-width: 768px) {
+    .about-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .page-language-switcher {
+        font-size: 0.7rem;
+    }
+
     .about-content {
         padding: 0 1.5rem;
     }
