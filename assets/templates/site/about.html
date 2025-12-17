@@ -95,20 +95,20 @@
                 </div>
             </div>
         </section>
-        {{end}}{{/* end if .Contact */}}
-        {{end}}{{/* end about-contact */}}
-        {{end}}{{/* end about-content */}}
+        {{end}} {{/* end if .Contact */}}
+        {{end}} {{/* end about-contact */}}
+        {{end}} {{/* end about-content */}}
     </main>
-    
+
     {{block "about-footer" .}}
     <footer class="home-footer">
         <p>&copy; {{.Copyright}}</p>
     </footer>
-    {{end}}{{/* end about-footer */}}
+    {{end}} {{/* end about-footer */}}
 
     {{block "about-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
-    {{end}}{{/* end about-scripts */}}
-    {{end}}{{/* end about-body */}}
+    {{end}} {{/* end about-scripts */}}
+    {{end}} {{/* end about-body */}}
 </body>
 </html>

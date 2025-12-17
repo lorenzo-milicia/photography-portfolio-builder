@@ -22,12 +22,19 @@ var websiteBuildCmd = &cobra.Command{
 	Long:  `Generate the static website using processed images and content definitions.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Building website...\n")
+
+		// Clean and normalize paths
+		contentDirCLI = filepath.Clean(contentDirCLI)
+		outputDirCLI = filepath.Clean(outputDirCLI)
+
 		fmt.Printf("Content directory: %s\n", contentDirCLI)
 		fmt.Printf("Output directory: %s\n", outputDirCLI)
 
 		// Set default templates directory if not provided
 		if templatesDirCLI == "" {
 			templatesDirCLI = filepath.Join(contentDirCLI, "templates")
+		} else {
+			templatesDirCLI = filepath.Clean(templatesDirCLI)
 		}
 		fmt.Printf("Templates directory: %s\n", templatesDirCLI)
 
