@@ -63,12 +63,12 @@
     <footer class="home-footer">
         <p>&copy; {{.Copyright}}</p>
     </footer>
-    {{end}}
-    
+    {{end}}{{/* end index-footer */}}
+
     {{block "index-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
-    {{end}}
-    {{end}}
+    {{end}}{{/* end index-scripts */}}
+    {{end}}{{/* end index-body */}}
 </body>
 
 </html>

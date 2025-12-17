@@ -158,7 +158,7 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 
 		if len(matches) > 0 {
 			log.Debug().Int("count", len(matches)).Msg("Found custom template files")
-			tmpl, err = tmpl.ParseGlob(pattern)
+			tmpl, err = tmpl.ParseFiles(matches...)
 			if err != nil {
 				return fmt.Errorf("failed to parse custom templates: %w", err)
 			}

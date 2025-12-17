@@ -138,8 +138,8 @@
             {{end}}
         }
     </style>
-    {{end}}
-    {{end}}
+    {{end}}{{/* end project-styles */}}
+    {{end}}{{/* end project-head */}}
 </head>
 <body>
     {{block "project-body" .}}
@@ -209,11 +209,11 @@
     <footer class="home-footer">
         <p>&copy; {{.Copyright}}</p>
     </footer>
-    {{end}}
-    
+    {{end}}{{/* end project-footer */}}
+
     {{block "project-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
-    {{end}}
-    {{end}}
+    {{end}}{{/* end project-scripts */}}
+    {{end}}{{/* end project-body */}}
 </body>
 </html>

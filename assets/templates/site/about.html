@@ -104,11 +104,11 @@
     <footer class="home-footer">
         <p>&copy; {{.Copyright}}</p>
     </footer>
-    {{end}}
-    
+    {{end}}{{/* end about-footer */}}
+
     {{block "about-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
-    {{end}}
-    {{end}}
+    {{end}}{{/* end about-scripts */}}
+    {{end}}{{/* end about-body */}}
 </body>
 </html>
