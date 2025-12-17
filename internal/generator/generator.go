@@ -147,7 +147,7 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 	// Load override templates if custom templates directory is specified
 	if g.templatesDir != "" {
 		log.Debug().Str("dir", g.templatesDir).Msg("Checking for custom template overrides")
-		
+
 		// Parse all HTML files from the custom templates directory
 		// filepath.Glob handles non-existent directories gracefully
 		pattern := filepath.Join(g.templatesDir, "*.html")
@@ -155,7 +155,7 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 		if err != nil {
 			return fmt.Errorf("failed to glob custom templates: %w", err)
 		}
-		
+
 		if len(matches) > 0 {
 			log.Debug().Int("count", len(matches)).Msg("Found custom template files")
 			tmpl, err = tmpl.ParseGlob(pattern)

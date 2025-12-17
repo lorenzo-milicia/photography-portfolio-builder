@@ -24,13 +24,13 @@ var websiteBuildCmd = &cobra.Command{
 		fmt.Printf("Building website...\n")
 		fmt.Printf("Content directory: %s\n", contentDirCLI)
 		fmt.Printf("Output directory: %s\n", outputDirCLI)
-		
+
 		// Set default templates directory if not provided
 		if templatesDirCLI == "" {
 			templatesDirCLI = filepath.Join(contentDirCLI, "templates")
 		}
 		fmt.Printf("Templates directory: %s\n", templatesDirCLI)
-		
+
 		// If host not provided via flag, allow environment variable override.
 		// Do this before printing so logs accurately reflect the final host value.
 		if host == "" {
