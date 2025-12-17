@@ -44,6 +44,69 @@ If you prefer not to install, run the same commands with `go run go.lorenzomilic
 - Keep your site content in `content/` (projects and metadata). This is the source used to generate the site.
 - `photos/` is optional and used only by `images process`.
 
+## Template customization
+
+You can customize the look and feel of your generated website by providing custom templates that override the default templates.
+
+**Default templates directory**: `content/templates`
+
+You can specify a different directory using the `--templates` flag:
+
+```bash
+builder website build -c content -o dist --templates /path/to/custom/templates
+```
+
+### How template overrides work
+
+1. The generator first loads the base templates (embedded in the CLI)
+2. Then it loads any custom templates from your templates directory
+3. Custom templates can override specific blocks defined in the base templates
+
+### Available template blocks
+
+The base templates define the following overrideable blocks:
+
+**Shared across all pages:**
+- `navbar` — navigation bar (used by all pages)
+
+**index.html** (home page):
+- `index-head` — entire `<head>` section
+- `index-body` — entire `<body>` content
+- `index-content` — main content area
+- `index-footer` — footer section
+- `index-scripts` — scripts section
+
+**about.html** (about page):
+- `about-head` — entire `<head>` section
+- `about-body` — entire `<body>` content
+- `about-content` — main content area
+- `about-contact` — contact section
+- `about-footer` — footer section
+- `about-scripts` — scripts section
+
+**project.html** (project pages):
+- `project-head` — entire `<head>` section (excluding styles)
+- `project-styles` — inline styles section
+- `project-body` — entire `<body>` content
+- `project-header` — project header
+- `project-gallery` — gallery section
+- `project-footer` — footer section
+- `project-scripts` — scripts section
+
+### Example: Custom footer
+
+Create `content/templates/custom-footer.html`:
+
+```html
+{{define "index-footer"}}
+<footer class="custom-footer">
+    <p>&copy; {{.Copyright}} | Custom Design</p>
+</footer>
+{{end}}
+```
+
+This will override the footer on the home page only. To override footers on all pages, define all three blocks (`index-footer`, `about-footer`, `project-footer`).
+
 ## Images upload
 
 After running `images process` you can upload the processed images to an S3-compatible store (Cloudflare R2, AWS S3, etc.) so they can be served from a CDN.

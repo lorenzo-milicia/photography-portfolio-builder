@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -13,6 +14,7 @@ import (
 var host string
 var contentDirCLI string
 var outputDirCLI string
+var templatesDirCLI string
 
 var websiteBuildCmd = &cobra.Command{
 	Use:   "build",
@@ -20,8 +22,22 @@ var websiteBuildCmd = &cobra.Command{
 	Long:  `Generate the static website using processed images and content definitions.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Building website...\n")
+
+		// Clean and normalize paths
+		contentDirCLI = filepath.Clean(contentDirCLI)
+		outputDirCLI = filepath.Clean(outputDirCLI)
+
 		fmt.Printf("Content directory: %s\n", contentDirCLI)
 		fmt.Printf("Output directory: %s\n", outputDirCLI)
+
+		// Set default templates directory if not provided
+		if templatesDirCLI == "" {
+			templatesDirCLI = filepath.Join(contentDirCLI, "templates")
+		} else {
+			templatesDirCLI = filepath.Clean(templatesDirCLI)
+		}
+		fmt.Printf("Templates directory: %s\n", templatesDirCLI)
+
 		// If host not provided via flag, allow environment variable override.
 		// Do this before printing so logs accurately reflect the final host value.
 		if host == "" {
@@ -43,6 +59,7 @@ var websiteBuildCmd = &cobra.Command{
 
 		// Create generator
 		gen := generator.NewGenerator(contentDirCLI, outputDirCLI, assets.TemplatesFS, assets.StaticFS)
+		gen.SetTemplatesDir(templatesDirCLI)
 
 		// Generate site (baseURL empty for root-relative paths, imageURLPrefix from --host flag)
 		if err := gen.Generate("", host); err != nil {
@@ -60,4 +77,5 @@ func init() {
 	websiteBuildCmd.Flags().StringVar(&host, "host", "", "Host URL for images (e.g., https://my-bucket.s3.amazonaws.com)")
 	websiteBuildCmd.Flags().StringVarP(&contentDirCLI, "content", "c", "content", "Content directory")
 	websiteBuildCmd.Flags().StringVarP(&outputDirCLI, "output", "o", "dist", "Output directory for the static site")
+	websiteBuildCmd.Flags().StringVarP(&templatesDirCLI, "templates", "t", "", "Custom templates directory for overrides (default: <content>/templates)")
 }

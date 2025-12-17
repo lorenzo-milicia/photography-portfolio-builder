@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    {{block "index-head" .}}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.WebsiteName}}</title>
@@ -19,11 +20,14 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{.BaseURL}}/favicon/apple-touch-icon.png">
     <link rel="manifest" href="{{.BaseURL}}/favicon/site.webmanifest">
     <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css?v={{.BuildTimestamp}}">
+    {{end}}
 </head>
 
 <body>
+    {{block "index-body" .}}
     {{template "navbar" .}}
     <main class="home-container">
+        {{block "index-content" .}}
         {{if .Projects}}
         <section class="projects-section reveal-item">
             <div class="projects-content">
@@ -50,13 +54,19 @@
             <p>No projects available yet.</p>
         </div>
         {{end}}
+        {{end}}
     </main>
     
+    {{block "index-footer" .}}
     <footer class="home-footer">
         <p>&copy; {{.Copyright}}</p>
     </footer>
-    
+    {{end}} {{/* end index-footer */}}
+
+    {{block "index-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
+    {{end}} {{/* end index-scripts */}}
+    {{end}} {{/* end index-body */}}
 </body>
 
 </html>
