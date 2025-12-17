@@ -1,0 +1,28 @@
+grid_width: 12
+placements:
+  - filename: "test-photo-1"
+    position:
+      top_left_x: 1
+      top_left_y: 1
+      bottom_right_x: 6
+      bottom_right_y: 2
+  - filename: "test-photo-2"
+    position:
+      top_left_x: 7
+      top_left_y: 1
+      bottom_right_x: 12
+      bottom_right_y: 2
+mobile_grid_width: 6
+mobile_placements:
+  - filename: "test-photo-1"
+    position:
+      top_left_x: 1
+      top_left_y: 1
+      bottom_right_x: 6
+      bottom_right_y: 1
+  - filename: "test-photo-2"
+    position:
+      top_left_x: 1
+      top_left_y: 2
+      bottom_right_x: 6
+      bottom_right_y: 2
