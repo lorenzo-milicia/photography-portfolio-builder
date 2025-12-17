@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -148,13 +149,23 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 	if g.templatesDir != "" {
 		log.Debug().Str("dir", g.templatesDir).Msg("Checking for custom template overrides")
 
-		// Parse all HTML files from the custom templates directory
-		// filepath.Glob returns empty slice for non-existent directories without error
-		pattern := filepath.Join(g.templatesDir, "*.html")
-		matches, err := filepath.Glob(pattern)
-		if err != nil {
-			return fmt.Errorf("failed to glob custom templates: %w", err)
+		var matches []string
+		if err := filepath.WalkDir(g.templatesDir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			if strings.HasSuffix(strings.ToLower(d.Name()), ".html") {
+				matches = append(matches, path)
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("failed to discover custom templates: %w", err)
 		}
+
+		sort.Strings(matches)
 
 		if len(matches) > 0 {
 			log.Debug().Int("count", len(matches)).Msg("Found custom template files")
@@ -261,13 +272,37 @@ func (g *Generator) generateIndex(projects []*content.ProjectMetadata, buildTime
 		siteMeta.LogoSecondary = "photography"
 	}
 
+	imageBase := g.imageURLPrefix
+	if imageBase == "" {
+		imageBase = g.baseURL
+	}
+
+	projectHeroes := make(map[string]*content.PhotoInfo)
+	heroImageBases := make(map[string]string)
+	projectMap := make(map[string]*content.ProjectMetadata)
+
+	for _, project := range projects {
+		if project.HeroPhoto == "" {
+			continue
+		}
+
+		heroHash := project.HeroPhoto
+		projectHeroes[project.Slug] = &content.PhotoInfo{HashID: heroHash}
+		heroImageBases[project.Slug] = fmt.Sprintf("%s/images/%s/%s", imageBase, project.Slug, heroHash)
+		projectMap[project.Slug] = project
+	}
+
 	data := map[string]interface{}{
 		"Projects":       projects,
 		"BaseURL":        g.baseURL,
+		"ImageURLPrefix": g.imageURLPrefix,
 		"Copyright":      siteMeta.Copyright,
 		"WebsiteName":    siteMeta.WebsiteName,
 		"LogoPrimary":    siteMeta.LogoPrimary,
 		"LogoSecondary":  siteMeta.LogoSecondary,
+		"ProjectHeroes":  projectHeroes,
+		"HeroImageBases": heroImageBases,
+		"ProjectMap":     projectMap,
 		"BuildTimestamp": buildTimestamp,
 	}
 

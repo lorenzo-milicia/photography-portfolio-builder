@@ -16,6 +16,7 @@ type ProjectMetadata struct {
 	Title       string    `yaml:"title"`
 	Slug        string    `yaml:"slug"`
 	Description string    `yaml:"description"`
+	HeroPhoto   string    `yaml:"hero_photo,omitempty" json:"heroPhoto,omitempty"`
 	Hidden      bool      `yaml:"hidden"`
 	CreatedAt   time.Time `yaml:"created_at"`
 	UpdatedAt   time.Time `yaml:"updated_at"`
