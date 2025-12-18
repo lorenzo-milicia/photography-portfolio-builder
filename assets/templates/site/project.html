@@ -24,11 +24,7 @@
     {{end}}
     {{block "project-styles" .}}
     <style>
-        .gallery-wrapper {
-            width: 100%;
-            max-width: 1400px;
-            margin: 2rem auto;
-        }
+
         
         .gallery-grid {
             display: grid;
@@ -41,7 +37,7 @@
         @media (min-width: 769px) {
             .gallery-grid {
                 /* For screens wider than 1400px + padding */
-                grid-auto-rows: calc(min(1400px, 100vw - 2rem) / {{.Layout.GridWidth}} - ({{sub .Layout.GridWidth 1}} * 1rem / {{.Layout.GridWidth}}));
+                grid-auto-rows: calc((100vw - 8.5rem) / {{.Layout.GridWidth}} - ({{sub .Layout.GridWidth 1}} * 1rem / {{.Layout.GridWidth}}));
             }
         }
         
