@@ -33,11 +33,12 @@
     box-sizing: border-box;
     scrollbar-width: thin;
     scrollbar-color: var(--border) var(--bg-alt);
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
 }
 
 html {
     width: 100%;
-    overflow-x: hidden;
     overflow-y: scroll;
     scrollbar-gutter: stable;
 }
@@ -53,7 +54,6 @@ body {
     min-height: 100dvh;
     width: 100%;
     max-width: 100vw;
-    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     opacity: 1;
@@ -125,14 +125,14 @@ p {
     flex: 1;
     width: 100%;
     max-width: 100%;
-    padding: 4rem 1.5rem 0;
+    padding: 2rem 1.5rem 0;
     display: flex;
     justify-content: center;
 }
 
 .project-container {
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
     padding: 0;
 }
 
@@ -157,7 +157,7 @@ p {
 .navbar-container {
     width: 100%;
     max-width: 100%;
-    padding: 1rem 1.5rem;
+    padding: 1rem 0rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -176,6 +176,7 @@ p {
     text-decoration: none;
     transition: var(--transition);
     -webkit-tap-highlight-color: transparent;
+    padding: 0 4rem;
 }
 
 .navbar-logo:hover,
@@ -244,6 +245,7 @@ p {
     display: flex;
     align-items: center;
     gap: 1rem;
+    margin-right: 3rem;
 }
 
 .navbar-link {
@@ -584,12 +586,14 @@ p {
 }
 
 .project-title {
-    font-size: 3.5rem;
+    font-size: 2.5rem;
     font-weight: 300;
     letter-spacing: -0.02em;
     color: var(--primary);
     margin-bottom: 0.75rem;
     line-height: 1.1;
+    opacity: 0;
+    animation: fadeIn 0.6s ease-out 0.12s both;
 }
 
 .project-subtitle {
@@ -599,6 +603,8 @@ p {
     max-width: 600px;
     margin: 0 auto;
     line-height: 1.6;
+    opacity: 0;
+    animation: fadeIn 0.6s ease-out 0.28s both;
 }
 
 /* ============================================================================
@@ -610,8 +616,13 @@ p {
     animation: fadeIn 0.8s ease-out;
 }
 
+.gallery-wrapper {
+    margin: 2rem 4rem;
+    padding: 0;
+}
+
 .gallery-grid {
-    padding: 0 0 4rem;
+    padding: 0;
 }
 
 .gallery-item {
@@ -648,6 +659,22 @@ p {
     will-change: auto;
 }
 
+/* Initial images should fade in slightly later than the subtitle to improve perceived load
+   - Uses the global `fadeIn` keyframes already defined above
+   - Delay chosen so subtitle (0.28s) appears before images (0.6s)
+*/
+.gallery-grid img {
+    opacity: 0;
+    animation: fadeIn 0.6s ease-out 0.6s both;
+}
+
+/* Preserve scroll-reveal behavior: if an item is revealed by scroll, cancel the initial animation */
+.reveal-on-scroll.visible img {
+    opacity: 1;
+    animation: none;
+    transition: opacity 0.3s ease-out;
+}
+
 /* Stagger animation for gallery items */
 .gallery-grid .reveal-on-scroll:nth-child(1) { transition-delay: 0.05s; }
 .gallery-grid .reveal-on-scroll:nth-child(2) { transition-delay: 0.1s; }
@@ -669,7 +696,7 @@ p {
 
 .about-content {
     max-width: 800px;
-    margin: 0 auto;
+    margin: 1rem auto;
     line-height: 1.8;
 }
 
@@ -1002,12 +1029,14 @@ p {
 
     /* Navbar */
     .navbar-container {
-        padding: 0.75rem 1rem;
+        padding: 0.75rem 0;
         gap: 0.75rem;
     }
 
     .navbar-logo {
         font-size: 1rem;
+        padding: 0 1rem;
+
     }
 
     .navbar-toggle {
@@ -1019,6 +1048,8 @@ p {
 
     .navbar-actions {
         display: none;
+        margin-right: 1rem;
+
     }
 
     /* Mobile Menu Overlay */
@@ -1107,14 +1138,14 @@ p {
         flex-direction: column;
         gap: 0;
         margin: 0;
-        padding-left: 0.5rem;
+        padding-left: 1rem;
     }
 
     .mobile-project-link {
         display: flex;
         align-items: center;
         gap: 1rem;
-        padding: 0.75rem 1rem;
+        padding: 0.75rem 0;
         margin-bottom: 0.5rem;
         text-decoration: none;
         transition: background 0.12s linear, color 0.12s linear;
@@ -1148,6 +1179,7 @@ p {
     .mobile-project-number {
         font-size: 0.875rem;
         font-weight: 400;
+        opacity: 0.6;
         color: var(--text-light);
         font-variant-numeric: tabular-nums;
         letter-spacing: 0.05em;
@@ -1249,6 +1281,42 @@ p {
         padding-top: 2rem;
     }
 
+    .about-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+    }
+
+    .page-language-switcher {
+        display: flex;
+        align-items: baseline;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+        text-transform: lowercase;
+        font-weight: 400;
+    }
+
+    .page-lang-link {
+        color: #999;
+        text-decoration: none;
+        transition: color 0.2s ease;
+        padding: 0.1rem 0.2rem;
+    }
+
+    .page-lang-link:hover {
+        color: var(--text);
+    }
+
+    .page-lang-link.active {
+        color: var(--text);
+    }
+
+    .page-lang-divider {
+        color: #ddd;
+        user-select: none;
+    }
+
     .about-content {
         margin-top: 3rem;
     }
@@ -1283,6 +1351,16 @@ p {
    ============================================================================ */
 
 @media (max-width: 768px) {
+    .about-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .page-language-switcher {
+        font-size: 0.7rem;
+    }
+
     .about-content {
         padding: 0 1.5rem;
     }

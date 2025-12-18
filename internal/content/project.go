@@ -16,6 +16,7 @@ type ProjectMetadata struct {
 	Title       string    `yaml:"title"`
 	Slug        string    `yaml:"slug"`
 	Description string    `yaml:"description"`
+	HeroPhoto   string    `yaml:"hero_photo,omitempty" json:"heroPhoto,omitempty"`
 	Hidden      bool      `yaml:"hidden"`
 	CreatedAt   time.Time `yaml:"created_at"`
 	UpdatedAt   time.Time `yaml:"updated_at"`
@@ -328,6 +329,48 @@ func (m *Manager) GetLayout(slug string) (*LayoutConfig, error) {
 		return nil, fmt.Errorf("failed to load layout: %w", err)
 	}
 	return &layout, nil
+}
+
+// IndexLayoutPath returns the path to the index page layout configuration
+func (m *Manager) IndexLayoutPath() string {
+	return filepath.Join(m.contentDir, "index-layout.yaml")
+}
+
+// IndexHeroPlacement represents a hero image placement with project reference
+type IndexHeroPlacement struct {
+	ProjectSlug string       `yaml:"project_slug" json:"projectSlug"`
+	Position    GridPosition `yaml:"position" json:"position"`
+}
+
+// IndexLayoutConfig holds layout configuration for the index page hero grid
+type IndexLayoutConfig struct {
+	GridWidth        int                  `yaml:"grid_width" json:"gridWidth"`
+	Placements       []IndexHeroPlacement `yaml:"placements" json:"placements"`
+	MobileGridWidth  int                  `yaml:"mobile_grid_width,omitempty" json:"mobileGridWidth,omitempty"`
+	MobilePlacements []IndexHeroPlacement `yaml:"mobile_placements,omitempty" json:"mobilePlacements,omitempty"`
+}
+
+// HasMobileLayout returns true if a separate mobile layout is configured
+func (lc *IndexLayoutConfig) HasMobileLayout() bool {
+	return lc.MobileGridWidth > 0 && len(lc.MobilePlacements) > 0
+}
+
+// GetIndexLayout retrieves the index page layout configuration
+func (m *Manager) GetIndexLayout() (*IndexLayoutConfig, error) {
+	var layout IndexLayoutConfig
+	if err := util.LoadYAML(m.IndexLayoutPath(), &layout); err != nil {
+		if os.IsNotExist(err) {
+			// Return empty layout if file doesn't exist
+			return &IndexLayoutConfig{GridWidth: 12}, nil
+		}
+		return nil, fmt.Errorf("failed to load index layout: %w", err)
+	}
+	return &layout, nil
+}
+
+// SaveIndexLayout saves the index page layout configuration
+func (m *Manager) SaveIndexLayout(layout *IndexLayoutConfig) error {
+	return util.SaveYAML(m.IndexLayoutPath(), layout)
 }
 
 // UpdateLayout updates a project's layout configuration

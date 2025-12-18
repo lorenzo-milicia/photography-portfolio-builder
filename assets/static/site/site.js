@@ -66,38 +66,39 @@
     }
 
     /**
-     * Initialize scroll-based navbar project title reveal
+     * Initialize scroll-based navbar project controller reveal
+     * (Title is now sticky, so we only need to show the controller)
      */
     function initializeScrollBehavior() {
-        const navbarCenter = document.querySelector('.navbar-center');
+        const navbarController = document.querySelector('.navbar-controller');
         const projectTitleElement = document.querySelector('.project-title');
 
-        if (!navbarCenter || !projectTitleElement) {
-            return; // Not a project page
+        if (!navbarController || !projectTitleElement) {
+            return; // Not a project page or no controller
         }
 
         let ticking = false;
 
-        function updateNavbarTitle() {
+        function updateNavbarController() {
             const titleRect = projectTitleElement.getBoundingClientRect();
             const navbar = document.querySelector('.main-navbar');
             if (!navbar) return;
 
             const navbarBottom = navbar.getBoundingClientRect().bottom;
+            const titleIsAboveNavbar = titleRect.bottom < navbarBottom;
 
-            if (titleRect.bottom < navbarBottom) {
-                navbar.classList.add('navbar-title-visible');
-                navbarCenter.classList.add('visible');
+            // Show controller while the title is visible; hide it after the title scrolls past
+            if (!titleIsAboveNavbar) {
+                navbar.classList.add('navbar-controller-visible');
+                navbarController.classList.add('visible');
 
-                // Mobile only: morph logo secondary with fade
                 if (window.innerWidth <= 768) {
                     morphLogoText('project');
                 }
             } else {
-                navbar.classList.remove('navbar-title-visible');
-                navbarCenter.classList.remove('visible');
+                navbar.classList.remove('navbar-controller-visible');
+                navbarController.classList.remove('visible');
 
-                // Mobile only: restore logo secondary with fade
                 if (window.innerWidth <= 768) {
                     morphLogoText('default');
                 }
@@ -107,13 +108,13 @@
 
         window.addEventListener('scroll', function() {
             if (!ticking) {
-                window.requestAnimationFrame(updateNavbarTitle);
+                window.requestAnimationFrame(updateNavbarController);
                 ticking = true;
             }
         });
 
         // Initial check
-        updateNavbarTitle();
+        updateNavbarController();
     }
 
     /**
@@ -146,13 +147,43 @@
         // Simple reveal for home page sections
         const simpleRevealSection = document.querySelector('.reveal-item');
         if (simpleRevealSection) {
-            setTimeout(() => {
-                simpleRevealSection.classList.add('visible');
-            }, 100);
+            // Wait for images inside the hero section to be decoded/loaded
+            waitForImagesInContainer(simpleRevealSection, 1000 /*ms timeout*/) 
+                .then(() => simpleRevealSection.classList.add('visible'))
+                .catch(() => simpleRevealSection.classList.add('visible'));
         }
 
         // IntersectionObserver-based reveal for gallery items
         setupRevealObserver();
+    }
+
+    /**
+     * Wait for all images inside a container to be decoded or loaded.
+     * Resolves when all images are ready or when the timeout elapses.
+     * @param {Element} container
+     * @param {number} timeoutMs
+     * @returns {Promise}
+     */
+    function waitForImagesInContainer(container, timeoutMs) {
+        const imgs = Array.from(container.querySelectorAll('img'));
+        if (imgs.length === 0) return Promise.resolve();
+
+        const decodes = imgs.map(img => {
+            // If already complete, resolve immediately
+            if (img.complete) return Promise.resolve();
+
+            // Prefer decode() where available
+            if (img.decode) {
+                return img.decode().catch(() => new Promise(resolve => img.addEventListener('load', resolve, { once: true })));
+            }
+
+            // Fallback to load event
+            return new Promise(resolve => img.addEventListener('load', resolve, { once: true }));
+        });
+
+        // Race the decode promises against a timeout so animation still proceeds
+        const timeout = new Promise((resolve) => setTimeout(resolve, timeoutMs));
+        return Promise.race([Promise.all(decodes).then(() => {}), timeout]);
     }
 
     /**

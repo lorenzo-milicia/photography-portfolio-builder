@@ -19,26 +19,25 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{.BaseURL}}/favicon/apple-touch-icon.png">
     <link rel="manifest" href="{{.BaseURL}}/favicon/site.webmanifest">
     <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css?v={{.BuildTimestamp}}">
+    {{if .CustomCSS}}
+    <link rel="stylesheet" href="{{.BaseURL}}/static/css/{{.CustomCSS}}?v={{.BuildTimestamp}}">
+    {{end}}
     {{block "project-styles" .}}
     <style>
-        .gallery-wrapper {
-            width: 100%;
-            max-width: 1400px;
-            margin: 2rem auto;
-        }
+
         
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat({{.Layout.GridWidth}}, 1fr);
-            gap: 1rem;
+            gap: var(--gallery-gap-desktop);
             width: 100%;
         }
         
         /* Responsive row height based on viewport/container width */
         @media (min-width: 769px) {
             .gallery-grid {
-                /* For screens wider than 1400px + padding */
-                grid-auto-rows: calc(min(1400px, 100vw - 2rem) / {{.Layout.GridWidth}} - ({{sub .Layout.GridWidth 1}} * 1rem / {{.Layout.GridWidth}}));
+                /* Calculate row height: (viewport - wrapper padding) / columns - (gaps / columns) */
+                grid-auto-rows: calc((100vw - var(--gallery-wrapper-padding-horizontal-desktop)) / {{.Layout.GridWidth}} - ({{sub .Layout.GridWidth 1}} * var(--gallery-gap-desktop) / {{.Layout.GridWidth}}));
             }
         }
         
@@ -80,8 +79,8 @@
             
             .gallery-grid {
                 grid-template-columns: repeat({{.Layout.MobileGridWidth}}, 1fr);
-                gap: 0.5rem;
-                grid-auto-rows: calc((100vw - 1rem - ({{sub .Layout.MobileGridWidth 1}} * 0.5rem)) / {{.Layout.MobileGridWidth}});
+                gap: var(--gallery-gap-mobile);
+                grid-auto-rows: calc((100vw - var(--gallery-wrapper-padding-horizontal-mobile) - ({{sub .Layout.MobileGridWidth 1}} * var(--gallery-gap-mobile))) / {{.Layout.MobileGridWidth}});
             }
             
             /* Override for items with custom aspect ratios */
@@ -125,7 +124,7 @@
             
             .gallery-grid {
                 grid-template-columns: 1fr;
-                gap: 0.5rem;
+                gap: var(--gallery-gap-mobile);
                 grid-auto-rows: auto;
             }
             
@@ -211,6 +210,9 @@
 
     {{block "project-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
+    {{if .CustomJS}}
+    <script src="{{.BaseURL}}/static/js/{{.CustomJS}}?v={{.BuildTimestamp}}"></script>
+    {{end}}
     {{end}} {{/* end project-scripts */}}
     {{end}} {{/* end project-body */}}
 </body>
