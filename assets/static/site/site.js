@@ -147,13 +147,43 @@
         // Simple reveal for home page sections
         const simpleRevealSection = document.querySelector('.reveal-item');
         if (simpleRevealSection) {
-            setTimeout(() => {
-                simpleRevealSection.classList.add('visible');
-            }, 100);
+            // Wait for images inside the hero section to be decoded/loaded
+            waitForImagesInContainer(simpleRevealSection, 1000 /*ms timeout*/) 
+                .then(() => simpleRevealSection.classList.add('visible'))
+                .catch(() => simpleRevealSection.classList.add('visible'));
         }
 
         // IntersectionObserver-based reveal for gallery items
         setupRevealObserver();
+    }
+
+    /**
+     * Wait for all images inside a container to be decoded or loaded.
+     * Resolves when all images are ready or when the timeout elapses.
+     * @param {Element} container
+     * @param {number} timeoutMs
+     * @returns {Promise}
+     */
+    function waitForImagesInContainer(container, timeoutMs) {
+        const imgs = Array.from(container.querySelectorAll('img'));
+        if (imgs.length === 0) return Promise.resolve();
+
+        const decodes = imgs.map(img => {
+            // If already complete, resolve immediately
+            if (img.complete) return Promise.resolve();
+
+            // Prefer decode() where available
+            if (img.decode) {
+                return img.decode().catch(() => new Promise(resolve => img.addEventListener('load', resolve, { once: true })));
+            }
+
+            // Fallback to load event
+            return new Promise(resolve => img.addEventListener('load', resolve, { once: true }));
+        });
+
+        // Race the decode promises against a timeout so animation still proceeds
+        const timeout = new Promise((resolve) => setTimeout(resolve, timeoutMs));
+        return Promise.race([Promise.all(decodes).then(() => {}), timeout]);
     }
 
     /**
