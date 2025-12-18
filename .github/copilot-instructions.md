@@ -71,11 +71,15 @@ All commands support `--env <file>` to load environment variables.
 
 ## Architecture
 
-**Templates:** Base templates in `assets/templates/site/` (go:embed), custom overrides in `<content>/templates/`. See README.md lines 50-107 for override blocks.
+**Templates:** Base templates in `assets/templates/site/` (go:embed), custom overrides in `<content>/templates/`. Template discovery is recursive - all `.html` files in subdirectories are loaded. See README.md for override blocks.
+
+**Custom Assets:** `custom.css`/`custom.js` OR `site.css`/`site.js` in templates directory are discovered via `discoverCustomAssets()`, copied to output as `custom.css`/`custom.js`, and included after base assets in all pages.
 
 **Image Processing:** `internal/processing/` creates 480w/800w/1200w/1920w variants + 300w thumbnails, strips EXIF, supports WebP.
 
 **Content:** YAML files in `<content>/projects/` and `<content>/photos/`. Models in `internal/content/`.
+
+**Hero Images:** Projects can have `hero_photo` field (12-char hash ID). Index page can display hero images using grid layout defined in `content/index-layout.yaml` (`IndexLayoutConfig` with desktop/mobile placements).
 
 ## Common Issues
 
@@ -93,16 +97,24 @@ All commands support `--env <file>` to load environment variables.
 
 **Templates (`assets/templates/`):** Edit template → **MUST rebuild** (go:embed) → test with `website build`
 
+**CSS/JS assets (`assets/static/site/`):** Edit → **MUST rebuild** (go:embed) → test with `website build` + `website serve`. CSS uses variables like `--gallery-gap-desktop`, `--gallery-gap-mobile`, `--gallery-wrapper-padding-horizontal-desktop`.
+
 **Image processing:** Edit code → rebuild → test: `./bin/builder images process -i photos -o dist/images --force`
 
 **Site generation:** Edit code → rebuild → test: `website build` + `website serve` → verify in browser
+
+**Content models (`internal/content/`):** Edit structs → rebuild → test YAML loading/saving. Key models: `ProjectMetadata` (includes `HeroPhoto`), `LayoutConfig`, `IndexLayoutConfig`, `IndexHeroPlacement`.
 
 **Dependencies:** Import → `go mod tidy` → `go mod verify` → commit go.mod/go.sum
 
 ## Quick Reference
 
-**Key files:** `cmd/main.go` (entry), `cmd/cli/root.go` (root cmd), `internal/generator/generator.go` (site gen, 21k LOC), `internal/builder/server.go` (builder UI, 20k LOC), `assets/assets.go` (embeds)
+**Key files:** `cmd/main.go` (entry), `cmd/cli/root.go` (root cmd), `internal/generator/generator.go` (site gen), `internal/builder/server.go` (builder UI), `assets/assets.go` (embeds)
+
+**Template functions:** Generator provides template functions like `calculateSizes`, `calculateMobileSizes`, `calculateIndexSizes`, `calculateIndexMobileSizes` for responsive image sizing. `sanitizeClass` for CSS class names.
 
 **Git ignores:** `/bin/`, `/content/`, `/photos/`, `/dist/`, `/output/`, `tmp/`, `.env`
+
+**UI/UX features:** Fade-in animations for project titles/images (CSS keyframes), scroll-based navbar controller reveal, mobile menu overlay, CSS variables for consistent spacing.
 
 **Trust these instructions** - validated by building/testing. Only search codebase if: instructions incomplete, commands fail, or need implementation details not covered here.
