@@ -33,6 +33,8 @@
     box-sizing: border-box;
     scrollbar-width: thin;
     scrollbar-color: var(--border) var(--bg-alt);
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
 }
 
 html {
