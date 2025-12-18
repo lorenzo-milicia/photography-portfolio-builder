@@ -62,6 +62,12 @@ builder website build -c content -o dist --templates /path/to/custom/templates
 2. Then it loads any custom templates from your templates directory
 3. Custom templates can override specific blocks defined in the base templates
 
+### Custom CSS/JS overrides
+
+- Place `custom.css` and/or `custom.js` in your templates directory (default: `content/templates`).
+- They are copied to `static/css/custom.css` and `static/js/custom.js` and included after the embedded site assets on every page, so your overrides win the cascade.
+- Files named `site.css` or `site.js` are also picked up, but they are still published as `custom.css`/`custom.js` in the generated output.
+
 ### Available template blocks
 
 The base templates define the following overrideable blocks:

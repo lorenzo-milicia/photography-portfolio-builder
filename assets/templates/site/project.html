@@ -19,6 +19,9 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{.BaseURL}}/favicon/apple-touch-icon.png">
     <link rel="manifest" href="{{.BaseURL}}/favicon/site.webmanifest">
     <link rel="stylesheet" href="{{.BaseURL}}/static/css/site.css?v={{.BuildTimestamp}}">
+    {{if .CustomCSS}}
+    <link rel="stylesheet" href="{{.BaseURL}}/static/css/{{.CustomCSS}}?v={{.BuildTimestamp}}">
+    {{end}}
     {{block "project-styles" .}}
     <style>
         .gallery-wrapper {
@@ -211,6 +214,9 @@
 
     {{block "project-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
+    {{if .CustomJS}}
+    <script src="{{.BaseURL}}/static/js/{{.CustomJS}}?v={{.BuildTimestamp}}"></script>
+    {{end}}
     {{end}} {{/* end project-scripts */}}
     {{end}} {{/* end project-body */}}
 </body>

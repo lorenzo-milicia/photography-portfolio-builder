@@ -66,38 +66,39 @@
     }
 
     /**
-     * Initialize scroll-based navbar project title reveal
+     * Initialize scroll-based navbar project controller reveal
+     * (Title is now sticky, so we only need to show the controller)
      */
     function initializeScrollBehavior() {
-        const navbarCenter = document.querySelector('.navbar-center');
+        const navbarController = document.querySelector('.navbar-controller');
         const projectTitleElement = document.querySelector('.project-title');
 
-        if (!navbarCenter || !projectTitleElement) {
-            return; // Not a project page
+        if (!navbarController || !projectTitleElement) {
+            return; // Not a project page or no controller
         }
 
         let ticking = false;
 
-        function updateNavbarTitle() {
+        function updateNavbarController() {
             const titleRect = projectTitleElement.getBoundingClientRect();
             const navbar = document.querySelector('.main-navbar');
             if (!navbar) return;
 
             const navbarBottom = navbar.getBoundingClientRect().bottom;
+            const titleIsAboveNavbar = titleRect.bottom < navbarBottom;
 
-            if (titleRect.bottom < navbarBottom) {
-                navbar.classList.add('navbar-title-visible');
-                navbarCenter.classList.add('visible');
+            // Show controller while the title is visible; hide it after the title scrolls past
+            if (!titleIsAboveNavbar) {
+                navbar.classList.add('navbar-controller-visible');
+                navbarController.classList.add('visible');
 
-                // Mobile only: morph logo secondary with fade
                 if (window.innerWidth <= 768) {
                     morphLogoText('project');
                 }
             } else {
-                navbar.classList.remove('navbar-title-visible');
-                navbarCenter.classList.remove('visible');
+                navbar.classList.remove('navbar-controller-visible');
+                navbarController.classList.remove('visible');
 
-                // Mobile only: restore logo secondary with fade
                 if (window.innerWidth <= 768) {
                     morphLogoText('default');
                 }
@@ -107,13 +108,13 @@
 
         window.addEventListener('scroll', function() {
             if (!ticking) {
-                window.requestAnimationFrame(updateNavbarTitle);
+                window.requestAnimationFrame(updateNavbarController);
                 ticking = true;
             }
         });
 
         // Initial check
-        updateNavbarTitle();
+        updateNavbarController();
     }
 
     /**

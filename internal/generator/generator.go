@@ -14,6 +14,11 @@ import (
 	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/content"
 )
 
+const (
+	customCSSDestName = "custom.css"
+	customJSDestName  = "custom.js"
+)
+
 // Generator handles static site generation
 type Generator struct {
 	contentMgr     *content.Manager
@@ -25,6 +30,8 @@ type Generator struct {
 	templates      *template.Template
 	baseURL        string
 	imageURLPrefix string
+	customCSSPath  string
+	customJSPath   string
 }
 
 // NewGenerator creates a new site generator
@@ -80,15 +87,14 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 			return result
 		},
 		"calculateSizes": func(placement content.PhotoPlacement) string {
-			// Calculate the viewport width percentage for this image
-			// Grid is 12 columns, max container is 1400px
+			// Calculate the viewport width percentage for this image (desktop uses vw)
+			// Grid is 12 columns; use percentage of viewport width so browser picks
+			// an appropriately sized srcset entry instead of defaulting to a large px value.
 			colSpan := placement.Position.BottomRightX - placement.Position.TopLeftX + 1
 			percentage := (colSpan * 100) / 12
 
-			// Generate sizes attribute for responsive images
-			// Format: (max-width: breakpoint) width, default-width
-			return fmt.Sprintf("(max-width: 768px) 100vw, (max-width: 1024px) %dvw, %dpx",
-				percentage, (colSpan*1400)/12)
+			// For mobile, use 100vw; otherwise instruct browser to use %dvw.
+			return fmt.Sprintf("(max-width: 768px) 100vw, %dvw", percentage)
 		},
 		"calculateMobileSizes": func(placement content.PhotoPlacement, mobileGridWidth int) string {
 			// Calculate the proper sizes for mobile images
@@ -134,15 +140,16 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 			// CSS calc formula:
 			// ((100vw - horizontal_padding - total_gaps_space) * colSpan / gridWidth) + gaps_in_image
 			// This gives us the actual pixel width the image will occupy
-			return fmt.Sprintf("(max-width: 768px) calc((100vw - %dpx) * %d / %d + %dpx), 0px",
-				16+totalGapsPx, colSpan, mobileGridWidth, imageGapsPx)
+			// Provide a sensible fallback width (use container-based approximation)
+			fallbackPx := (colSpan * 1400) / 12
+			return fmt.Sprintf("(max-width: 768px) calc((100vw - %dpx) * %d / %d + %dpx), %dpx",
+				16+totalGapsPx, colSpan, mobileGridWidth, imageGapsPx, fallbackPx)
 		},
 		"calculateIndexSizes": func(placement content.IndexHeroPlacement) string {
 			// Same logic as calculateSizes but for index hero placements
 			colSpan := placement.Position.BottomRightX - placement.Position.TopLeftX + 1
 			percentage := (colSpan * 100) / 12
-			return fmt.Sprintf("(max-width: 768px) 100vw, (max-width: 1024px) %dvw, %dpx",
-				percentage, (colSpan*1400)/12)
+			return fmt.Sprintf("(max-width: 768px) 100vw, %dvw", percentage)
 		},
 		"calculateIndexMobileSizes": func(placement content.IndexHeroPlacement, mobileGridWidth int) string {
 			// Same logic as calculateMobileSizes but for index hero placements
@@ -152,8 +159,10 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 			}
 			totalGapsPx := (mobileGridWidth - 1) * 8
 			imageGapsPx := (colSpan - 1) * 8
-			return fmt.Sprintf("(max-width: 768px) calc((100vw - %dpx) * %d / %d + %dpx), 0px",
-				16+totalGapsPx, colSpan, mobileGridWidth, imageGapsPx)
+			// Provide a sensible fallback width (use container-based approximation)
+			fallbackPx := (colSpan * 1400) / 12
+			return fmt.Sprintf("(max-width: 768px) calc((100vw - %dpx) * %d / %d + %dpx), %dpx",
+				16+totalGapsPx, colSpan, mobileGridWidth, imageGapsPx, fallbackPx)
 		},
 	}
 
@@ -197,6 +206,10 @@ func (g *Generator) Generate(baseURL string, imageURLPrefix string) error {
 	}
 
 	g.templates = tmpl
+
+	if err := g.discoverCustomAssets(); err != nil {
+		return err
+	}
 
 	// Create output directory (use the root of the provided outputDir)
 	publicDir := g.outputDir
@@ -317,6 +330,8 @@ func (g *Generator) generateIndex(projects []*content.ProjectMetadata, buildTime
 		indexLayout = &content.IndexLayoutConfig{GridWidth: 12}
 	}
 
+	customCSS, customJS := g.customAssets()
+
 	data := map[string]interface{}{
 		"Projects":       projects,
 		"BaseURL":        g.baseURL,
@@ -330,6 +345,8 @@ func (g *Generator) generateIndex(projects []*content.ProjectMetadata, buildTime
 		"ProjectMap":     projectMap,
 		"IndexLayout":    indexLayout,
 		"BuildTimestamp": buildTimestamp,
+		"CustomCSS":      customCSS,
+		"CustomJS":       customJS,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "index.html", data); err != nil {
@@ -392,6 +409,8 @@ func (g *Generator) generateAbout(buildTimestamp int64) error {
 		}
 	}
 
+	customCSS, customJS := g.customAssets()
+
 	data := map[string]interface{}{
 		"BaseURL":        g.baseURL,
 		"WebsiteName":    siteMeta.WebsiteName,
@@ -402,6 +421,8 @@ func (g *Generator) generateAbout(buildTimestamp int64) error {
 		"Contact":        siteMeta.Contact,
 		"Copyright":      siteMeta.Copyright,
 		"BuildTimestamp": buildTimestamp,
+		"CustomCSS":      customCSS,
+		"CustomJS":       customJS,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "about.html", data); err != nil {
@@ -493,6 +514,8 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata, buildT
 		siteMeta.LogoSecondary = "photography"
 	}
 
+	customCSS, customJS := g.customAssets()
+
 	data := map[string]interface{}{
 		"Project":        project,
 		"Photos":         photos,
@@ -506,6 +529,8 @@ func (g *Generator) generateProjectPage(project *content.ProjectMetadata, buildT
 		"LogoSecondary":  siteMeta.LogoSecondary,
 		"Copyright":      siteMeta.Copyright,
 		"BuildTimestamp": buildTimestamp,
+		"CustomCSS":      customCSS,
+		"CustomJS":       customJS,
 	}
 
 	if err := g.templates.ExecuteTemplate(file, "project.html", data); err != nil {
@@ -659,6 +684,60 @@ func (g *Generator) copyStaticAssets() error {
 		log.Debug().Str("dest", jsPath).Msg("Copied site JS")
 	}
 
+	if g.customCSSPath != "" {
+		customCSSDest := filepath.Join(cssDir, customCSSDestName)
+		if err := copyFile(g.customCSSPath, customCSSDest); err != nil {
+			return fmt.Errorf("failed to copy custom CSS: %w", err)
+		}
+		log.Debug().Str("src", g.customCSSPath).Str("dest", customCSSDest).Msg("Copied custom CSS override")
+	}
+
+	if g.customJSPath != "" {
+		customJSDest := filepath.Join(jsDir, customJSDestName)
+		if err := copyFile(g.customJSPath, customJSDest); err != nil {
+			return fmt.Errorf("failed to copy custom JS: %w", err)
+		}
+		log.Debug().Str("src", g.customJSPath).Str("dest", customJSDest).Msg("Copied custom JS override")
+	}
+
+	return nil
+}
+
+func (g *Generator) customAssets() (string, string) {
+	css := ""
+	js := ""
+	if g.customCSSPath != "" {
+		css = customCSSDestName
+	}
+	if g.customJSPath != "" {
+		js = customJSDestName
+	}
+	return css, js
+}
+
+func (g *Generator) discoverCustomAssets() error {
+	if g.templatesDir == "" {
+		return nil
+	}
+
+	cssPath, err := firstExistingFile(g.templatesDir, []string{"custom.css", "site.css"})
+	if err != nil {
+		return fmt.Errorf("failed to check custom CSS: %w", err)
+	}
+	if cssPath != "" {
+		log.Debug().Str("file", cssPath).Msg("Found custom CSS override")
+	}
+	g.customCSSPath = cssPath
+
+	jsPath, err := firstExistingFile(g.templatesDir, []string{"custom.js", "site.js"})
+	if err != nil {
+		return fmt.Errorf("failed to check custom JS: %w", err)
+	}
+	if jsPath != "" {
+		log.Debug().Str("file", jsPath).Msg("Found custom JS override")
+	}
+	g.customJSPath = jsPath
+
 	return nil
 }
 
@@ -713,4 +792,22 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	return os.WriteFile(dst, sourceData, 0644)
+}
+
+func firstExistingFile(base string, candidates []string) (string, error) {
+	for _, name := range candidates {
+		candidatePath := filepath.Join(base, name)
+		info, err := os.Stat(candidatePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return "", err
+		}
+		if info.IsDir() {
+			continue
+		}
+		return candidatePath, nil
+	}
+	return "", nil
 }
