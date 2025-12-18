@@ -113,6 +113,75 @@ Create `content/templates/custom-footer.html`:
 
 This will override the footer on the home page only. To override footers on all pages, define all three blocks (`index-footer`, `about-footer`, `project-footer`).
 
+## Hero images and index page grid layout
+
+You can display project hero images on your homepage using a customizable grid layout.
+
+### Setting a hero image for a project
+
+Add the `hero_photo` field to your project's metadata YAML file (e.g., `content/projects/my-project.yaml`):
+
+```yaml
+title: My Project
+slug: my-project
+description: A beautiful photography project
+hero_photo: abc123def456  # 12-character hash ID of the photo
+created_at: 2024-01-01T00:00:00Z
+```
+
+The `hero_photo` value should be the 12-character hash ID of a photo from that project.
+
+### Configuring the index page grid layout
+
+Create `content/index-layout.yaml` to define how hero images are arranged on the homepage:
+
+```yaml
+grid_width: 12
+placements:
+  - project_slug: my-project
+    position:
+      top_left_x: 1
+      top_left_y: 1
+      bottom_right_x: 6
+      bottom_right_y: 3
+  - project_slug: another-project
+    position:
+      top_left_x: 7
+      top_left_y: 1
+      bottom_right_x: 12
+      bottom_right_y: 2
+```
+
+**Configuration options:**
+
+- `grid_width` — number of columns in the grid (typically 12)
+- `placements` — array of hero image placements
+  - `project_slug` — slug of the project whose hero image to display
+  - `position` — grid position using 1-based coordinates
+    - `top_left_x`, `top_left_y` — starting position
+    - `bottom_right_x`, `bottom_right_y` — ending position (inclusive)
+
+### Mobile layouts
+
+You can define a separate grid layout for mobile devices:
+
+```yaml
+grid_width: 12
+placements:
+  # ... desktop placements ...
+
+mobile_grid_width: 6
+mobile_placements:
+  - project_slug: my-project
+    position:
+      top_left_x: 1
+      top_left_y: 1
+      bottom_right_x: 6
+      bottom_right_y: 2
+```
+
+If `mobile_grid_width` and `mobile_placements` are provided, the mobile layout will be used on screens ≤768px wide. Otherwise, the default single-column layout is used.
+
 ## Images upload
 
 After running `images process` you can upload the processed images to an S3-compatible store (Cloudflare R2, AWS S3, etc.) so they can be served from a CDN.
