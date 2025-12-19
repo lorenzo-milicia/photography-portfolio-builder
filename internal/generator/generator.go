@@ -700,6 +700,34 @@ func (g *Generator) copyStaticAssets() error {
 		log.Debug().Str("src", g.customJSPath).Str("dest", customJSDest).Msg("Copied custom JS override")
 	}
 
+	// Merge content/static into output/static if present (preserve directory structure)
+	srcContentStatic := filepath.Join(g.contentDir, "static")
+	if info, err := os.Stat(srcContentStatic); err == nil && info.IsDir() {
+		log.Debug().Str("dir", srcContentStatic).Msg("Merging content static assets into output static")
+		if err := filepath.WalkDir(srcContentStatic, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			rel, err := filepath.Rel(srcContentStatic, path)
+			if err != nil {
+				return err
+			}
+			destination := filepath.Join(g.outputDir, "static", filepath.FromSlash(rel))
+			if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
+				return err
+			}
+			if err := copyFile(path, destination); err != nil {
+				return err
+			}
+			log.Debug().Str("src", path).Str("dest", destination).Msg("Copied content static file")
+			return nil
+		}); err != nil {
+			return fmt.Errorf("failed to merge content static assets: %w", err)
+		}
+	}
 	return nil
 }
 
