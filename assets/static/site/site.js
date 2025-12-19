@@ -205,24 +205,34 @@
                     if (entry.isIntersecting) {
                         const item = entry.target;
                         const img = item.querySelector('img');
-                        
+                        const pairKey = item.getAttribute('data-pair');
+
+                        function markVisible() {
+                            // mark the observed item visible
+                            item.classList.add('visible');
+                            // If there is a data-pair, mark all paired elements visible too
+                            if (pairKey) {
+                                document.querySelectorAll('[data-pair="' + pairKey + '"]').forEach(el => el.classList.add('visible'));
+                            }
+                        }
+
                         // Use decode API to avoid blocking main thread
                         if (img && !img.complete) {
                             if (img.decode) {
                                 img.decode()
-                                    .then(() => item.classList.add('visible'))
-                                    .catch(() => item.classList.add('visible'));
+                                    .then(() => markVisible())
+                                    .catch(() => markVisible());
                             } else {
                                 // Fallback for browsers without decode API
                                 img.addEventListener('load', () => {
-                                    item.classList.add('visible');
+                                    markVisible();
                                 }, { once: true });
                             }
                         } else {
                             // Image already loaded or no image
-                            item.classList.add('visible');
+                            markVisible();
                         }
-                        
+
                         observer.unobserve(item);
                     }
                 });
