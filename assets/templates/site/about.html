@@ -40,6 +40,7 @@
                 {{range .About.Paragraphs}}
                 <p>{{nl2br .}}</p>
                 {{end}}
+                {{ block "about-quote" . }}
                 {{if .About.Quote}}
                 <blockquote class="about-quote">
                     <p>{{nl2br .About.Quote}}</p>
@@ -48,6 +49,7 @@
                     {{end}}
                 </blockquote>
                 {{end}}
+                {{ end }}
             {{else}}
                 <p>Welcome to my photography portfolio. I'm passionate about capturing moments that tell stories, evoke emotions, and showcase the beauty in everyday life and extraordinary scenes.</p>
                 
