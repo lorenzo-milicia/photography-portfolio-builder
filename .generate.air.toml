@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 [build]
   cmd = "go build -o ./tmp/main ./cmd"
   delay = 1000
-  entrypoint = ["./tmp/main", "generate"]
+  entrypoint = ["./tmp/main", "website", "build"]
   include_dir = ["content", "internal", "cmd", "assets"]
   include_ext = ["yaml", "jpeg", "html", "css", "go"]
   exclude_dir = []

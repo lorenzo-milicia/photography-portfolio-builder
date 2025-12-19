@@ -104,11 +104,7 @@
         {{end}} {{/* end about-content */}}
     </main>
 
-    {{block "about-footer" .}}
-    <footer class="home-footer">
-        <p>&copy; {{.Copyright}}</p>
-    </footer>
-    {{end}} {{/* end about-footer */}}
+    {{block "about-footer" .}}{{template "footer" .}}{{end}} {{/* end about-footer */}}
 
     {{block "about-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>

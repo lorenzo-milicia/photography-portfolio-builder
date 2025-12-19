@@ -1,0 +1,7 @@
+{{/* Shared footer template. Individual pages can override their own "*-footer" block and still
+   call this shared template via `{{template "footer" .}}`. */}}
+{{define "footer"}}
+<footer class="home-footer">
+    <p>&copy; {{.Copyright}}</p>
+</footer>
+{{end}}

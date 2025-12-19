@@ -61,11 +61,7 @@
         {{end}}
     </main>
     
-    {{block "index-footer" .}}
-    <footer class="home-footer">
-        <p>&copy; {{.Copyright}}</p>
-    </footer>
-    {{end}} {{/* end index-footer */}}
+    {{block "index-footer" .}}{{template "footer" .}}{{end}} {{/* end index-footer */}}
 
     {{block "index-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>

@@ -203,11 +203,7 @@
         {{end}}
     </div>
     
-    {{block "project-footer" .}}
-    <footer class="home-footer">
-        <p>&copy; {{.Copyright}}</p>
-    </footer>
-    {{end}} {{/* end project-footer */}}
+    {{block "project-footer" .}}{{template "footer" .}}{{end}} {{/* end project-footer */}}
 
     {{block "project-scripts" .}}
     <script src="{{.BaseURL}}/static/js/site.js?v={{.BuildTimestamp}}"></script>
