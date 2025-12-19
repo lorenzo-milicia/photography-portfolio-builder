@@ -22,6 +22,7 @@
     {{if .CustomCSS}}
     <link rel="stylesheet" href="{{.BaseURL}}/static/css/{{.CustomCSS}}?v={{.BuildTimestamp}}">
     {{end}}
+    {{block "extra-head" .}}{{end}}
     {{end}}
 </head>
 <body>
