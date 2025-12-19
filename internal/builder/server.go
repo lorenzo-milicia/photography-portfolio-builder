@@ -52,6 +52,7 @@ func NewServer(templatesFS, staticFS fs.FS, contentDir, photosDir, outputDir str
 
 	contentMgr := content.NewManagerWithPhotosDir(contentDir, photosDir)
 	gen := generator.NewGenerator(contentDir, outputDir, templatesFS, staticFS)
+	gen.SetTemplatesDir(filepath.Join(contentDir, "templates"))
 
 	return &Server{
 		templates:  tmpl,
