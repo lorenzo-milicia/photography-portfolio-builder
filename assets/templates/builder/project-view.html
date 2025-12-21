@@ -1,7 +1,7 @@
 <div class="card">
     <h2>{{.Project.Title}}</h2>
 
-    <form hx-post="/api/project/update" hx-target="#update-result">
+    <form hx-post="/api/project/update" hx-swap="none">
         <input type="hidden" name="slug" value="{{.Project.Slug}}">
 
         <div class="form-group">
@@ -21,11 +21,26 @@
 
         <button type="submit" class="btn btn-success">Update Project</button>
         <button type="button" class="btn btn-danger" hx-post="/api/project/delete?slug={{.Project.Slug}}"
-            hx-confirm="Are you sure you want to delete this project?" hx-target="#main-content">
+            hx-confirm="Are you sure you want to delete this project?" hx-swap="none">
             Delete Project
         </button>
-        <div id="update-result" style="margin-top: 1rem;"></div>
     </form>
+</div>
+
+<div class="card">
+    <h3>🎨 Layout</h3>
+    <p style="color: var(--text-light); margin-bottom: 1.5rem;">
+        Arrange your selected photos on a customizable grid layout.
+    </p>
+
+    <div style="display: flex; gap: 1rem; align-items: center;">
+        <a href="/layout/{{.Project.Slug}}" class="btn btn-primary" style="text-decoration: none;">
+            Edit Layout
+        </a>
+        <span style="color: var(--text-light); font-size: 0.875rem;">
+            Grid: {{.Layout.GridWidth}} columns, {{len .Layout.Placements}} photo(s) placed
+        </span>
+    </div>
 </div>
 
 <div class="card">
@@ -51,21 +66,5 @@
             No photos found. Add photos to <code>content/photos/{{.Project.Slug}}/</code>
         </p>
         {{end}}
-    </div>
-</div>
-
-<div class="card">
-    <h3>🎨 Layout</h3>
-    <p style="color: var(--text-light); margin-bottom: 1.5rem;">
-        Arrange your selected photos on a customizable grid layout.
-    </p>
-
-    <div style="display: flex; gap: 1rem; align-items: center;">
-        <a href="/layout/{{.Project.Slug}}" class="btn btn-primary" style="text-decoration: none;">
-            Edit Layout
-        </a>
-        <span style="color: var(--text-light); font-size: 0.875rem;">
-            Grid: {{.Layout.GridWidth}} columns, {{len .Layout.Placements}} photo(s) placed
-        </span>
     </div>
 </div>

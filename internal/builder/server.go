@@ -337,12 +337,29 @@ func (s *Server) handleProjectUpdate(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.contentMgr.UpdateProject(slug, title, description, hidden); err != nil {
 		log.Printf("Error updating project: %v", err)
-		http.Error(w, "Failed to update project", http.StatusInternalServerError)
+		// Send error toast trigger
+		events := map[string]interface{}{
+			"showMessage": map[string]string{
+				"type":    "error",
+				"message": fmt.Sprintf("Failed to update project: %v", err),
+			},
+		}
+		eventJSON, _ := json.Marshal(events)
+		w.Header().Set("HX-Trigger", string(eventJSON))
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
+	// Send success toast trigger
+	events := map[string]interface{}{
+		"showMessage": map[string]string{
+			"type":    "success",
+			"message": "Project updated successfully",
+		},
+	}
+	eventJSON, _ := json.Marshal(events)
+	w.Header().Set("HX-Trigger", string(eventJSON))
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Project updated successfully")
 }
 
 // handleProjectDelete deletes a project
@@ -360,7 +377,16 @@ func (s *Server) handleProjectDelete(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.contentMgr.DeleteProject(slug); err != nil {
 		log.Printf("Error deleting project: %v", err)
-		http.Error(w, "Failed to delete project", http.StatusInternalServerError)
+		// Send error toast trigger
+		events := map[string]interface{}{
+			"showMessage": map[string]string{
+				"type":    "error",
+				"message": fmt.Sprintf("Failed to delete project: %v", err),
+			},
+		}
+		eventJSON, _ := json.Marshal(events)
+		w.Header().Set("HX-Trigger", string(eventJSON))
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
