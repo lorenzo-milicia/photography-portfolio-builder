@@ -46,9 +46,19 @@
 <div class="card">
     <h3>📸 Photos</h3>
     <p style="color: var(--text-light); margin-bottom: 1.5rem;">
-        Place photos in <code>content/photos/{{.Project.Slug}}/</code>. All photos will be available in the layout
-        editor.
+        Place photos in <code>content/photos/{{.Project.Slug}}/</code> or upload them here.
     </p>
+
+    <div style="margin-bottom: 2rem;">
+        <form hx-post="/api/project/upload" hx-encoding="multipart/form-data" hx-swap="none">
+            <input type="hidden" name="slug" value="{{.Project.Slug}}">
+            <input type="file" name="upload" accept="image/png, image/jpeg" required
+                onchange="this.form.requestSubmit()">
+            <small style="display: block; color: var(--text-light); margin-top: 0.5rem;">
+                Select an image to upload. It will be processed automatically.
+            </small>
+        </form>
+    </div>
 
     <div id="photo-gallery">
         {{if .Photos}}
@@ -59,6 +69,12 @@
                 <span class="photo-name">{{.Filename}}</span>
                 <span class="photo-size">{{.RatioWidth}}:{{.RatioHeight}}</span>
             </div>
+            <button class="btn-delete-photo"
+                hx-delete="/api/project/photo?slug={{$.Project.Slug}}&filename={{.Filename}}"
+                hx-confirm="Are you sure you want to delete {{.Filename}}?" hx-target="closest .photo-item"
+                hx-swap="delete" title="Delete photo">
+                ×
+            </button>
         </div>
         {{end}}
         {{else}}

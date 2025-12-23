@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/content"
 	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/generator"
+	"go.lorenzomilicia.dev/photography-portfolio-builder/internal/processing"
 )
 
 // Server represents the builder HTTP server
@@ -24,6 +25,8 @@ type Server struct {
 	contentMgr *content.Manager
 	generator  *generator.Generator
 	outputDir  string
+	photosDir  string                // Add photosDir
+	processor  *processing.Processor // Add processor
 }
 
 // NewServer creates a new builder server with content and photos in separate directories
@@ -54,12 +57,23 @@ func NewServer(templatesFS, staticFS fs.FS, contentDir, photosDir, outputDir str
 	gen := generator.NewGenerator(contentDir, outputDir, templatesFS, staticFS)
 	gen.SetTemplatesDir(filepath.Join(contentDir, "templates"))
 
+	// Initialize processor
+	proc := processing.NewProcessor(processing.ProcessConfig{
+		Widths:             []int{480, 800, 1200, 1920},
+		Quality:            85,
+		Force:              true, // Force to ensure we process new uploads correctly even if hash collides (unlikely but safe)
+		GenerateThumbnails: true,
+		ThumbnailWidth:     300,
+	})
+
 	return &Server{
 		templates:  tmpl,
 		staticFS:   staticFS,
 		contentMgr: contentMgr,
 		generator:  gen,
 		outputDir:  outputDir,
+		photosDir:  photosDir,
+		processor:  proc,
 	}, nil
 }
 
@@ -107,6 +121,8 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/project/photos/list", s.handlePhotoList)
 	mux.HandleFunc("/api/project/layout/get", s.handleLayoutGet)
 	mux.HandleFunc("/api/project/layout/update", s.handleLayoutUpdate)
+	mux.HandleFunc("/api/project/upload", s.handleProjectUpload)
+	mux.HandleFunc("/api/project/photo", s.handlePhotoDelete) // Handles DELETE
 	mux.HandleFunc("/api/generate", s.handleGenerate)
 	mux.HandleFunc("/api/config/update", s.handleConfigUpdate)
 

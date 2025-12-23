@@ -645,3 +645,36 @@ textarea {
         gap: 1rem;
     }
 }
+/* Photo Delete Button */
+.btn-delete-photo {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(231, 76, 60, 0.9); /* danger color with opacity */
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s ease;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.photo-item:hover .btn-delete-photo {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.btn-delete-photo:hover {
+    background: #c0392b; /* danger-dark */
+    transform: scale(1.1);
+}

@@ -141,10 +141,58 @@
             font-size: 0.875rem;
         }
 
+        .ratio-group {
+            margin-bottom: 1rem;
+        }
+
+        .ratio-group-header {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--dark);
+            padding: 0.5rem 0;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ratio-group-header::-webkit-details-marker {
+            display: none;
+        }
+
+        .ratio-group-header::before {
+            content: '▸';
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+
+        .ratio-group[open]>.ratio-group-header::before {
+            transform: rotate(90deg);
+        }
+
         .photo-list {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .ratio-divider {
+            grid-column: 1 / -1;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--gray);
+            background: var(--gray-lightest);
+            padding: 0.35rem 0.5rem;
+            border-radius: var(--radius-sm);
+            margin-top: 0.5rem;
+            margin-bottom: 0.25rem;
+            text-align: center;
+        }
+
+        .ratio-divider:first-child {
+            margin-top: 0;
         }
 
         .photo-list-item {
@@ -173,7 +221,8 @@
 
         .photo-list-item img {
             width: 100%;
-            height: auto;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
             display: block;
         }
 
@@ -530,10 +579,8 @@
             </div>
         </div>
         <div class="header-right">
-            <span id="status-indicator" style="color: var(--gray); font-size: 0.875rem;"></span>
             <button id="generate-btn" class="btn btn-secondary" title="Generate preview">⚡ Generate Preview</button>
             <button id="save-btn" class="btn btn-success">Save Layout</button>
-            <div id="generate-result" style="margin-left: 0.75rem; font-size: 0.9rem; display: inline-block;"></div>
         </div>
     </div>
 
@@ -547,21 +594,63 @@
             <button id="clear-layout-btn" class="btn-clear-layout">🗑️ Clear Layout</button>
 
             <h3>Available Photos</h3>
-            <div class="photo-list" id="photo-list">
-                {{range .Photos}}
-                <div class="photo-list-item" data-hash-id="{{.HashID}}">
-                    <img src="{{.ThumbPath}}" alt="{{.Filename}}">
-                    <div class="photo-list-item-footer">
-                        <div class="photo-name" title="{{.Filename}}">{{.Filename}}</div>
-                        <div style="font-size: 0.65rem; color: var(--gray-light);">{{.RatioWidth}}:{{.RatioHeight}}
+
+            <!-- Landscape Photos -->
+            <details class="ratio-group" open>
+                <summary class="ratio-group-header">🖼️ Landscape</summary>
+                <div class="photo-list" id="photo-list-landscape">
+                    {{range .Photos}}{{if gt .RatioWidth .RatioHeight}}
+                    <div class="photo-list-item" data-hash-id="{{.HashID}}"
+                        data-ratio="{{.RatioWidth}}:{{.RatioHeight}}">
+                        <img src="{{.ThumbPath}}" alt="{{.Filename}}">
+                        <div class="photo-list-item-footer">
+                            <div class="photo-name" title="{{.Filename}}">{{.Filename}}</div>
+                            <div style="font-size: 0.65rem; color: var(--gray-light);">{{.RatioWidth}}:{{.RatioHeight}}
+                            </div>
+                            <button class="btn-add" data-hash-id="{{.HashID}}">+ Add</button>
                         </div>
-                        <button class="btn-add" data-hash-id="{{.HashID}}">
-                            + Add
-                        </button>
                     </div>
+                    {{end}}{{end}}
                 </div>
-                {{end}}
-            </div>
+            </details>
+
+            <!-- Square Photos -->
+            <details class="ratio-group" open>
+                <summary class="ratio-group-header">⬜ Square</summary>
+                <div class="photo-list" id="photo-list-square">
+                    {{range .Photos}}{{if eq .RatioWidth .RatioHeight}}
+                    <div class="photo-list-item" data-hash-id="{{.HashID}}"
+                        data-ratio="{{.RatioWidth}}:{{.RatioHeight}}">
+                        <img src="{{.ThumbPath}}" alt="{{.Filename}}">
+                        <div class="photo-list-item-footer">
+                            <div class="photo-name" title="{{.Filename}}">{{.Filename}}</div>
+                            <div style="font-size: 0.65rem; color: var(--gray-light);">{{.RatioWidth}}:{{.RatioHeight}}
+                            </div>
+                            <button class="btn-add" data-hash-id="{{.HashID}}">+ Add</button>
+                        </div>
+                    </div>
+                    {{end}}{{end}}
+                </div>
+            </details>
+
+            <!-- Portrait Photos -->
+            <details class="ratio-group" open>
+                <summary class="ratio-group-header">📱 Portrait</summary>
+                <div class="photo-list" id="photo-list-portrait">
+                    {{range .Photos}}{{if lt .RatioWidth .RatioHeight}}
+                    <div class="photo-list-item" data-hash-id="{{.HashID}}"
+                        data-ratio="{{.RatioWidth}}:{{.RatioHeight}}">
+                        <img src="{{.ThumbPath}}" alt="{{.Filename}}">
+                        <div class="photo-list-item-footer">
+                            <div class="photo-name" title="{{.Filename}}">{{.Filename}}</div>
+                            <div style="font-size: 0.65rem; color: var(--gray-light);">{{.RatioWidth}}:{{.RatioHeight}}
+                            </div>
+                            <button class="btn-add" data-hash-id="{{.HashID}}">+ Add</button>
+                        </div>
+                    </div>
+                    {{end}}{{end}}
+                </div>
+            </details>
         </div>
 
         <div class="grid-workspace">
@@ -593,7 +682,68 @@
         <div id="status-message" class="status-message"></div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
     <script>
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="icon">${type === 'success' ? '✓' : (type === 'info' ? 'ⓘ' : '✗')}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(40px)';
+                setTimeout(() => toast.remove(), 400);
+            }, 4000);
+        }
+
+        // Sort photos within a container by ratio and insert dividers
+        function sortPhotosInGroup(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // Get all photo items
+            const items = Array.from(container.querySelectorAll('.photo-list-item'));
+            if (items.length === 0) return;
+
+            // Remove existing dividers
+            container.querySelectorAll('.ratio-divider').forEach(d => d.remove());
+
+            // Parse ratio and group
+            const grouped = {};
+            items.forEach(item => {
+                const ratio = item.dataset.ratio || '1:1';
+                if (!grouped[ratio]) grouped[ratio] = [];
+                grouped[ratio].push(item);
+            });
+
+            // Sort ratios by numeric value (width/height)
+            const sortedRatios = Object.keys(grouped).sort((a, b) => {
+                const [aw, ah] = a.split(':').map(Number);
+                const [bw, bh] = b.split(':').map(Number);
+                return (bw / bh) - (aw / ah); // Descending
+            });
+
+            // Clear container and rebuild with dividers
+            container.innerHTML = '';
+            sortedRatios.forEach(ratio => {
+                // Add divider
+                const divider = document.createElement('div');
+                divider.className = 'ratio-divider';
+                divider.textContent = ratio;
+                container.appendChild(divider);
+
+                // Add items
+                grouped[ratio].forEach(item => container.appendChild(item));
+            });
+        }
+
         const projectSlug = '{{.Project.Slug}}';
         let gridWidth = parseInt(document.getElementById('grid-width').value);
         let placements = [];
@@ -1291,35 +1441,22 @@
         // Generate preview handler
         document.getElementById('generate-btn').addEventListener('click', async function () {
             const genBtn = this;
-            const statusEl = document.getElementById('status-indicator');
-            const resultEl = document.getElementById('generate-result');
-
             genBtn.disabled = true;
-            statusEl.textContent = 'Generating preview...';
-            statusEl.style.color = 'var(--primary)';
-            resultEl.textContent = '';
+            showToast('Generating preview...', 'info');
 
             try {
                 const res = await fetch('/api/generate', { method: 'POST' });
                 const text = await res.text();
                 if (!res.ok) {
-                    statusEl.textContent = 'Generation failed';
-                    statusEl.style.color = 'var(--danger)';
-                    resultEl.innerHTML = text;
+                    showToast(text || 'Generation failed', 'error');
                 } else {
-                    statusEl.textContent = 'Generation complete';
-                    statusEl.style.color = 'var(--success)';
-                    // Backend returns a small HTML snippet with a preview link — show it
-                    resultEl.innerHTML = text;
+                    showToast('Preview generated successfully!', 'success');
                 }
             } catch (err) {
                 console.error('Generate failed', err);
-                statusEl.textContent = 'Generation error';
-                statusEl.style.color = 'var(--danger)';
-                resultEl.textContent = String(err);
+                showToast(String(err), 'error');
             } finally {
                 genBtn.disabled = false;
-                setTimeout(() => { statusEl.textContent = ''; }, 4000);
             }
         });
 
@@ -1441,6 +1578,11 @@
 
         // Initialize
         initGrid();
+
+        // Sort photos by specific ratio within each group and add dividers
+        sortPhotosInGroup('photo-list-landscape');
+        sortPhotosInGroup('photo-list-square');
+        sortPhotosInGroup('photo-list-portrait');
     </script>
 </body>
 

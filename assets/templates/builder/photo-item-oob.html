@@ -1,0 +1,12 @@
+<div class="photo-item" data-hash-id="{{.HashID}}" hx-swap-oob="beforeend:#photo-gallery">
+    <img src="{{.ThumbPath}}" alt="{{.Filename}}" loading="lazy">
+    <div class="photo-info">
+        <span class="photo-name">{{.Filename}}</span>
+        <span class="photo-size">{{.RatioWidth}}:{{.RatioHeight}}</span>
+    </div>
+    <button class="btn-delete-photo" hx-delete="/api/project/photo?slug={{.ProjectSlug}}&filename={{.Filename}}"
+        hx-confirm="Are you sure you want to delete {{.Filename}}?" hx-target="closest .photo-item" hx-swap="delete"
+        title="Delete photo">
+        ×
+    </button>
+</div>
