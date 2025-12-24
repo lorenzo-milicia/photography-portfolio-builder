@@ -31,14 +31,8 @@
             grid-template-columns: repeat({{.Layout.GridWidth}}, 1fr);
             gap: var(--gallery-gap-desktop);
             width: 100%;
-        }
-        
-        /* Responsive row height based on viewport/container width */
-        @media (min-width: 769px) {
-            .gallery-grid {
-                /* Calculate row height: (viewport - wrapper padding) / columns - (gaps / columns) */
-                grid-auto-rows: calc((100vw - var(--gallery-wrapper-padding-horizontal-desktop)) / {{.Layout.GridWidth}} - ({{sub .Layout.GridWidth 1}} * var(--gallery-gap-desktop) / {{.Layout.GridWidth}}));
-            }
+            height: 100%;
+            grid-auto-rows: 1fr;
         }
         
         .gallery-item {
@@ -80,7 +74,6 @@
             .gallery-grid {
                 grid-template-columns: repeat({{.Layout.MobileGridWidth}}, 1fr);
                 gap: var(--gallery-gap-mobile);
-                grid-auto-rows: calc((100vw - var(--gallery-wrapper-padding-horizontal-mobile) - ({{sub .Layout.MobileGridWidth 1}} * var(--gallery-gap-mobile))) / {{.Layout.MobileGridWidth}});
             }
             
             /* Override for items with custom aspect ratios */
