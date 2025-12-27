@@ -1,0 +1,12 @@
+{{define "projectCreated"}}
+  {{/* Render full project config into main content */}}
+  {{template "projectConfig" .Project}}
+
+  {{/* Render the project item as OOB (wrapOOB will set OOB=true) */}}
+  <div id="project-list" hx-swap-oob="beforeend">
+  {{template "projectItem" .Project}}
+    </div>
+
+  {{/* Render toast message OOB using the provided Message field */}}
+  {{template "toastMessage" .}}
+{{end}}

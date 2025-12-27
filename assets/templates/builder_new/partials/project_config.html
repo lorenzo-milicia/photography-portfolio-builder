@@ -1,0 +1,13 @@
+{{define "projectConfig"}}
+<section class="project-config">
+  <h2>Project configuration: {{.Title}}</h2>
+  <p><strong>Slug:</strong> {{.Slug}}</p>
+  <p><strong>Description:</strong> {{.Description}}</p>
+  <p><strong>Hidden:</strong> {{.Hidden}}</p>
+  <div class="project-actions">
+    <form method="post" action="/projects/{{.Slug}}/delete" hx-delete="/projects/{{.Slug}}" hx-target="#content" hx-indicator=".main-htmx-indicator">
+      <button type="submit" class="btn btn-danger">Delete Project</button>
+    </form>
+  </div>
+</section>
+{{end}}

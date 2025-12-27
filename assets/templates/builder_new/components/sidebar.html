@@ -1,0 +1,38 @@
+{{define "sidebar"}}
+<aside id="sidebar">
+  <div class="sidebar-inner">
+    <div class="sidebar-top">
+      <div class="section site-section">
+        <div class="section-title">Site</div>
+        <div class="section-body">
+          <button class="btn" data-action="open-config">Configuration</button>
+        </div>
+      </div>
+
+      <div class="section projects-section">
+        <div class="section-title">Projects</div>
+        <div id="project-list" class="section-body project-list">
+          {{- if .Projects}}
+            {{- range .Projects}}
+              {{template "projectItem" .}}
+            {{- end}}
+          {{- else}}
+            <div class="empty">No projects</div>
+          {{- end}}
+        </div>
+        <div class="section-body project-controls">
+          <a href="/projects/new" class="btn add-project" hx-get="/projects/new" hx-target="#content" hx-indicator=".main-htmx-indicator" hx-push-url="true">+ Add project</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="section build-section">
+        <div class="section-body">
+          <button class="btn build-btn" data-action="build-site">Build</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
+{{end}}

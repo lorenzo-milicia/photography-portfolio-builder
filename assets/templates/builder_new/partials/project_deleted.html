@@ -1,0 +1,13 @@
+{{define "projectDeleted"}}
+  <!-- Main content replacement -->
+  <section class="project-deleted">
+    <h2>Project deleted</h2>
+    <p>{{.Message}}</p>
+  </section>
+
+  <!-- OOB: remove the project item from the sidebar list -->
+  <div id="project-item-{{.Slug}}" hx-swap-oob="delete"></div>
+
+  <!-- OOB: toast message -->
+  {{template "toastMessage" .}}
+{{end}}

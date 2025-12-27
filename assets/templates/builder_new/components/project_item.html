@@ -1,0 +1,11 @@
+{{define "projectItem"}}
+<div id="project-item-{{.Slug}}" class="project-item">
+    <a class="project-link"
+      href="/projects/{{.Slug}}"
+      hx-get="/projects/{{.Slug}}"
+      hx-target="#content"
+      hx-indicator=".main-htmx-indicator"
+      hx-push-url="true"
+    >{{.Title}}</a>
+</div>
+{{end}}

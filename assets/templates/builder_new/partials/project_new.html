@@ -1,0 +1,25 @@
+{{define "projectNew"}}
+<section class="project-new">
+  <h1>New Project</h1>
+    <form id="project-new-form" class="project-form" method="post" action="/projects"
+      hx-post="/projects" hx-target="#content" hx-indicator=".project-new-htmx-indicator" hx-swap="innerHTML">
+    <label for="title">Title</label>
+    <input id="title" name="title" type="text" placeholder="Project title" required />
+
+    <label for="slug">Slug</label>
+    <input id="slug" name="slug" type="text" placeholder="project-slug" />
+
+    <label for="description">Description</label>
+    <textarea id="description" name="description" rows="6" placeholder="Short description"></textarea>
+
+    <label class="field-inline">
+      <input id="hidden" name="hidden" type="checkbox" /> Hidden
+    </label>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">Create Project</button>
+      <div class="spinner project-new-htmx-indicator" aria-hidden="true" role="status" aria-label="Creating"></div>
+    </div>
+  </form>
+</section>
+{{end}}

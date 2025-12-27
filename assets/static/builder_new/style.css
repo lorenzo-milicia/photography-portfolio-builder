@@ -1,0 +1,151 @@
+:root {
+  /* using rem-based units for scalability (1rem ~= root font-size, typically 16px) */
+  --sidebar-width: 15rem; /* ~240px */
+  --spacing-unit: 1.25rem; /* 20px */
+  --sidebar-bg: #f4f4f4;
+  --font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  display: flex;
+  min-height: 100vh;
+}
+
+#sidebar {
+  width: var(--sidebar-width);
+  background-color: var(--sidebar-bg);
+  padding: var(--spacing-unit);
+  box-sizing: border-box;
+  flex-shrink: 0;
+  /* ensure the sidebar uses relative sizing internally */
+  font-size: 1rem;
+}
+
+#main-content {
+  flex: 1;
+  padding: var(--spacing-unit);
+}
+
+#toast-container {
+  position: fixed;
+  bottom: var(--spacing-unit);
+  right: var(--spacing-unit);
+  z-index: 1000;
+}
+
+/* Sidebar layout internals */
+.sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.sidebar-top {
+  /* take available space, push bottom to footer */
+}
+.sidebar-bottom {
+  margin-top: auto;
+}
+
+.section {
+  margin-bottom: calc(var(--spacing-unit) / 2);
+}
+.section-title {
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing-unit) / 3);
+  font-size: 0.95rem;
+}
+.btn {
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: #2b6cb0;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.add-project {
+  margin-top: calc(var(--spacing-unit) / 2);
+}
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.project-item .project-link {
+  color: inherit;
+  text-decoration: none;
+}
+.project-item {
+  padding: 0.25rem 0.35rem;
+  border-radius: 3px;
+}
+.project-item:hover {
+  background: rgba(0,0,0,0.03);
+}
+
+/* Main content and loading spinner */
+.content {
+  opacity: 1;
+}
+
+/* Hidden by default; shown while HTMX request is in-flight via attribute or class */
+.main-loading-indicator {
+  display: none;
+}
+
+/* HTMX will add request indicators — support multiple possible markers so spinner becomes visible */
+.main-loading-indicator[htmx-request],
+.main-loading-indicator[hx-request],
+.main-loading-indicator.main-htmx-request,
+.main-loading-indicator.htmx-request {
+  display: block;
+}
+
+/* While a request is in-flight, hide the content element(s) with the main-content-indicator class */
+.main-content-indicator[htmx-request],
+.main-content-indicator[hx-request],
+.main-content-indicator.main-htmx-request,
+.main-content-indicator.htmx-request {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading .spinner,
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 0.25rem solid rgba(0,0,0,0.08);
+  border-top-color: rgba(0,0,0,0.6);
+  animation: spin 0.8s linear infinite;
+  margin: 0.5rem auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Inline/small spinner for forms */
+.spinner.small,
+.spinner--small {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-width: 0.15rem;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+}
+
+/* Project-new form indicator: hidden by default, shown while HTMX request is in-flight */
+.project-new-htmx-indicator {
+  display: none;
+}
+.project-new-htmx-indicator[htmx-request],
+.project-new-htmx-indicator[hx-request],
+.project-new-htmx-indicator.main-htmx-request,
+.project-new-htmx-indicator.htmx-request {
+  display: inline-block;
+}
