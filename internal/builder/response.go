@@ -126,12 +126,12 @@ func (tr *TemplateRenderer) RenderPartial(w http.ResponseWriter, templateName st
 // RenderPartialOrFull renders a partial for HTMX requests, or wraps in full page for direct navigation
 func (tr *TemplateRenderer) RenderPartialOrFull(w http.ResponseWriter, r *http.Request, templateName string, data interface{}) error {
 	isHtmxRequest := r.Header.Get("HX-Request") != ""
-	
+
 	if isHtmxRequest {
 		// For HTMX requests, render just the partial
 		return tr.RenderPartial(w, templateName, data)
 	}
-	
+
 	// For direct navigation, render partial into buffer first
 	var buf bytes.Buffer
 	if err := tr.templates.ExecuteTemplate(&buf, templateName, data); err != nil {
@@ -139,12 +139,12 @@ func (tr *TemplateRenderer) RenderPartialOrFull(w http.ResponseWriter, r *http.R
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return err
 	}
-	
+
 	// Wrap in full page layout
 	pageData := map[string]interface{}{
 		"Content": template.HTML(buf.String()),
 	}
-	
+
 	// Preserve any other data fields that might be needed by the page wrapper
 	if dataMap, ok := data.(map[string]interface{}); ok {
 		for k, v := range dataMap {
@@ -153,7 +153,7 @@ func (tr *TemplateRenderer) RenderPartialOrFull(w http.ResponseWriter, r *http.R
 			}
 		}
 	}
-	
+
 	return tr.RenderPartial(w, "index.html", pageData)
 }
 
