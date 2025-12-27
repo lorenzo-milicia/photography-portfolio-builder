@@ -159,15 +159,13 @@ func (s *Server) handleProjectUpload(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.templates.ExecuteTemplate(&buf, "photo-item-oob.html", data); err != nil {
 		log.Error().Err(err).Msg("Template error")
-		respWriter := NewResponseWriter(w)
-		respWriter.Error("Upload succeeded but failed to update UI")
+		rw.Error("Upload succeeded but failed to update UI")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	// Send success toast trigger
-	respWriter := NewResponseWriter(w)
-	respWriter.Success("Photo uploaded successfully")
+	rw.Success("Photo uploaded successfully")
 	w.WriteHeader(http.StatusOK)
 	io.WriteString(w, buf.String())
 }
