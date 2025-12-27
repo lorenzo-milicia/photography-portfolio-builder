@@ -1,6 +1,6 @@
 <div class="card">
     <h2>Site Configuration</h2>
-    <form hx-post="/api/config/update" hx-swap="none">
+    <form hx-post="/api/config/update" hx-swap="none" hx-disabled-elt="button[type='submit']" hx-indicator="#config-spinner">
         <div class="form-group">
             <label>Website Name</label>
             <input type="text" name="website_name" value="{{.Meta.WebsiteName}}" placeholder="My Portfolio">
@@ -29,7 +29,17 @@
         </div>
 
         <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
-            <button type="submit" class="btn">Save Configuration</button>
+            <button type="submit" class="btn" style="display: flex; align-items: center; gap: 0.5rem;">
+                Save Configuration
+                <svg id="config-spinner" class="spinner-icon htmx-indicator" xmlns="http://www.w3.org/2000/svg"
+                    fill="none" viewBox="0 0 24 24" style="width: 16px; height: 16px;">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+                        style="opacity: 0.3"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                </svg>
+            </button>
         </div>
 
         <div class="card" style="margin-top: 2rem; padding: 1.5rem; background: var(--bg);">

@@ -235,6 +235,41 @@ body {
     animation: fadeIn 0.4s ease-out;
 }
 
+/* Hide main content when spinner is showing */
+.main-content.htmx-request {
+    opacity: 0.3;
+}
+
+/* Main Content Loading Spinner */
+.main-content-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.main-content-spinner .spinner-icon {
+    width: 48px;
+    height: 48px;
+    color: var(--primary);
+}
+
+.main-content-spinner p {
+    color: var(--gray);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.main-content-spinner.htmx-request {
+    display: flex !important;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -466,14 +501,31 @@ textarea {
 }
 
 /* Spinner styles */
-/* Spinner styles */
-/* Spinner - Specific to Generate Button */
+/* General spinner icon styling */
+.spinner-icon {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+    animation: spin 1s linear infinite;
+    display: none;
+}
+
+/* Show spinner when htmx request is active */
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-indicator.htmx-request {
+    display: inline-block !important;
+}
+
+/* Spinner - Specific to Generate Button (legacy support) */
 #generate-btn .spinner-icon {
     width: 20px;
     height: 20px;
     margin-left: 8px;
     vertical-align: middle;
-    /* Use 'spin' animation with verify definition */
     animation: spin 1s linear infinite;
     display: none;
 }
