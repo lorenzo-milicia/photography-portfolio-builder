@@ -466,14 +466,31 @@ textarea {
 }
 
 /* Spinner styles */
-/* Spinner styles */
-/* Spinner - Specific to Generate Button */
+/* General spinner icon styling */
+.spinner-icon {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+    animation: spin 1s linear infinite;
+    display: none;
+}
+
+/* Show spinner when htmx request is active */
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-indicator.htmx-request {
+    display: inline-block !important;
+}
+
+/* Spinner - Specific to Generate Button (legacy support) */
 #generate-btn .spinner-icon {
     width: 20px;
     height: 20px;
     margin-left: 8px;
     vertical-align: middle;
-    /* Use 'spin' animation with verify definition */
     animation: spin 1s linear infinite;
     display: none;
 }
