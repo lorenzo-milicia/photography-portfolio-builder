@@ -1,7 +1,6 @@
 package builder
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -27,6 +26,7 @@ type Server struct {
 	outputDir  string
 	photosDir  string                // Add photosDir
 	processor  *processing.Processor // Add processor
+	renderer   *TemplateRenderer     // Template renderer helper
 }
 
 // NewServer creates a new builder server with content and photos in separate directories
@@ -74,6 +74,7 @@ func NewServer(templatesFS, staticFS fs.FS, contentDir, photosDir, outputDir str
 		outputDir:  outputDir,
 		photosDir:  photosDir,
 		processor:  proc,
+		renderer:   NewTemplateRenderer(tmpl),
 	}, nil
 }
 
@@ -151,8 +152,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		"Projects": projects,
 	}
 
-	if err := s.templates.ExecuteTemplate(w, "index.html", data); err != nil {
-		log.Error().Err(err).Msg("Template execution failed")
+	if err := s.renderer.RenderPartial(w, "index.html", data); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
@@ -161,7 +161,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleProjectList(w http.ResponseWriter, r *http.Request) {
 	projects, err := s.contentMgr.ListProjects()
 	if err != nil {
-		log.Printf("Error listing projects: %v", err)
+		log.Error().Err(err).Msg("Failed to list projects")
 		http.Error(w, "Failed to list projects", http.StatusInternalServerError)
 		return
 	}
@@ -170,16 +170,14 @@ func (s *Server) handleProjectList(w http.ResponseWriter, r *http.Request) {
 		"Projects": projects,
 	}
 
-	if err := s.templates.ExecuteTemplate(w, "project-list.html", data); err != nil {
-		log.Printf("Template error: %v", err)
+	if err := s.renderer.RenderPartial(w, "project-list.html", data); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
 
 // handleProjectNew shows the new project form
 func (s *Server) handleProjectNew(w http.ResponseWriter, r *http.Request) {
-	if err := s.templates.ExecuteTemplate(w, "project-new.html", nil); err != nil {
-		log.Printf("Template error: %v", err)
+	if err := s.renderer.RenderPartial(w, "project-new.html", nil); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
@@ -194,19 +192,20 @@ func (s *Server) handleProjectView(w http.ResponseWriter, r *http.Request) {
 
 	project, err := s.contentMgr.GetProject(slug)
 	if err != nil {
+		log.Error().Err(err).Str("slug", slug).Msg("Project not found")
 		http.Error(w, "Project not found", http.StatusNotFound)
 		return
 	}
 
 	photos, err := s.contentMgr.ListPhotos(slug)
 	if err != nil {
-		log.Printf("Error listing photos: %v", err)
+		log.Error().Err(err).Str("slug", slug).Msg("Failed to list photos")
 		photos = []*content.PhotoInfo{}
 	}
 
 	layout, err := s.contentMgr.GetLayout(slug)
 	if err != nil {
-		log.Printf("Error loading layout: %v", err)
+		log.Warn().Err(err).Str("slug", slug).Msg("Failed to load layout, using default")
 		layout = &content.LayoutConfig{GridWidth: 12, Placements: []content.PhotoPlacement{}}
 	}
 
@@ -216,30 +215,7 @@ func (s *Server) handleProjectView(w http.ResponseWriter, r *http.Request) {
 		"Layout":  layout,
 	}
 
-	// If this is not an htmx request (direct navigation), return full page with content
-	if r.Header.Get("HX-Request") == "" {
-		// Create a buffer to render the project view
-		var buf bytes.Buffer
-		if err := s.templates.ExecuteTemplate(&buf, "project-view.html", data); err != nil {
-			log.Printf("Template error: %v", err)
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
-
-		// Wrap it in the full page layout
-		pageData := map[string]interface{}{
-			"Content": template.HTML(buf.String()),
-		}
-		if err := s.templates.ExecuteTemplate(w, "index.html", pageData); err != nil {
-			log.Printf("Template error: %v", err)
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	// For htmx requests, return just the partial
-	if err := s.templates.ExecuteTemplate(w, "project-view.html", data); err != nil {
-		log.Printf("Template error: %v", err)
+	if err := s.renderer.RenderPartialOrFull(w, r, "project-view.html", data); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
@@ -254,19 +230,20 @@ func (s *Server) handleLayoutEditor(w http.ResponseWriter, r *http.Request) {
 
 	project, err := s.contentMgr.GetProject(slug)
 	if err != nil {
+		log.Error().Err(err).Str("slug", slug).Msg("Project not found")
 		http.Error(w, "Project not found", http.StatusNotFound)
 		return
 	}
 
 	photos, err := s.contentMgr.ListPhotos(slug)
 	if err != nil {
-		log.Printf("Error listing photos: %v", err)
+		log.Error().Err(err).Str("slug", slug).Msg("Failed to list photos")
 		photos = []*content.PhotoInfo{}
 	}
 
 	layout, err := s.contentMgr.GetLayout(slug)
 	if err != nil {
-		log.Printf("Error loading layout: %v", err)
+		log.Warn().Err(err).Str("slug", slug).Msg("Failed to load layout, using default")
 		layout = &content.LayoutConfig{GridWidth: 12, Placements: []content.PhotoPlacement{}}
 	}
 
@@ -276,8 +253,7 @@ func (s *Server) handleLayoutEditor(w http.ResponseWriter, r *http.Request) {
 		"Layout":  layout,
 	}
 
-	if err := s.templates.ExecuteTemplate(w, "layout-editor.html", data); err != nil {
-		log.Printf("Template error: %v", err)
+	if err := s.renderer.RenderPartial(w, "layout-editor.html", data); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
@@ -307,25 +283,17 @@ func (s *Server) handleProjectCreate(w http.ResponseWriter, r *http.Request) {
 	project, err := s.contentMgr.CreateProject(title, description)
 	if err != nil {
 		log.Error().Err(err).Str("title", title).Msg("Failed to create project")
-		// Return 200 OK even on error so htmx renders the content, or use hx-swap-oob.
-		// For simplicity, we stick to 200 here but usually htmx handles non-200 by not swapping unless configured.
-		// We'll return 500 but if we want htmx to show it, we might need configuration.
-		// Actually, htmx *does* sway by default on 200. On 500 it might stop.
-		// Safer to return 200 with error message for this simple UI, or keep 500 and handle htmx errors.
-		// Given "keep things simple", let's return a styled error div with 200 or just 500 and let htmx swap (if configured).
-		// Standard htmx doesn't swap on error codes. Let's return 200 OK with the error message.
+		rw := NewResponseWriter(w)
+		rw.Error(fmt.Sprintf("Failed to create project: %v", err))
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `<div class="result-alert error">
-			<span>❌</span>
-			<div>Failed to create project: %v</div>
-		</div>`, err)
 		return
 	}
 
 	log.Info().Str("slug", project.Slug).Msg("Project created successfully")
 
 	// Redirect to the new project
-	w.Header().Set("HX-Redirect", fmt.Sprintf("/project/%s", project.Slug))
+	rw := NewResponseWriter(w)
+	rw.Redirect(fmt.Sprintf("/project/%s", project.Slug))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -351,30 +319,18 @@ func (s *Server) handleProjectUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Info().Str("slug", slug).Str("title", title).Msg("Updating project")
+
 	if err := s.contentMgr.UpdateProject(slug, title, description, hidden); err != nil {
-		log.Printf("Error updating project: %v", err)
-		// Send error toast trigger
-		events := map[string]interface{}{
-			"showMessage": map[string]string{
-				"type":    "error",
-				"message": fmt.Sprintf("Failed to update project: %v", err),
-			},
-		}
-		eventJSON, _ := json.Marshal(events)
-		w.Header().Set("HX-Trigger", string(eventJSON))
+		log.Error().Err(err).Str("slug", slug).Msg("Failed to update project")
+		rw := NewResponseWriter(w)
+		rw.Error(fmt.Sprintf("Failed to update project: %v", err))
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	// Send success toast trigger
-	events := map[string]interface{}{
-		"showMessage": map[string]string{
-			"type":    "success",
-			"message": "Project updated successfully",
-		},
-	}
-	eventJSON, _ := json.Marshal(events)
-	w.Header().Set("HX-Trigger", string(eventJSON))
+	rw := NewResponseWriter(w)
+	rw.Success("Project updated successfully")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -391,22 +347,18 @@ func (s *Server) handleProjectDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Info().Str("slug", slug).Msg("Deleting project")
+
 	if err := s.contentMgr.DeleteProject(slug); err != nil {
-		log.Printf("Error deleting project: %v", err)
-		// Send error toast trigger
-		events := map[string]interface{}{
-			"showMessage": map[string]string{
-				"type":    "error",
-				"message": fmt.Sprintf("Failed to delete project: %v", err),
-			},
-		}
-		eventJSON, _ := json.Marshal(events)
-		w.Header().Set("HX-Trigger", string(eventJSON))
+		log.Error().Err(err).Str("slug", slug).Msg("Failed to delete project")
+		rw := NewResponseWriter(w)
+		rw.Error(fmt.Sprintf("Failed to delete project: %v", err))
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	w.Header().Set("HX-Redirect", "/")
+	rw := NewResponseWriter(w)
+	rw.Redirect("/")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -420,7 +372,7 @@ func (s *Server) handlePhotoList(w http.ResponseWriter, r *http.Request) {
 
 	photos, err := s.contentMgr.ListPhotos(slug)
 	if err != nil {
-		log.Printf("Error listing photos: %v", err)
+		log.Error().Err(err).Str("slug", slug).Msg("Failed to list photos")
 		http.Error(w, "Failed to list photos", http.StatusInternalServerError)
 		return
 	}
@@ -430,8 +382,7 @@ func (s *Server) handlePhotoList(w http.ResponseWriter, r *http.Request) {
 		"Project": map[string]string{"Slug": slug},
 	}
 
-	if err := s.templates.ExecuteTemplate(w, "photo-list.html", data); err != nil {
-		log.Printf("Template error: %v", err)
+	if err := s.renderer.RenderPartial(w, "photo-list.html", data); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
@@ -446,13 +397,14 @@ func (s *Server) handleLayoutGet(w http.ResponseWriter, r *http.Request) {
 
 	layout, err := s.contentMgr.GetLayout(slug)
 	if err != nil {
-		log.Printf("Error loading layout: %v", err)
+		log.Error().Err(err).Str("slug", slug).Msg("Failed to load layout")
 		http.Error(w, "Failed to load layout", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(layout)
+	if err := s.renderer.RenderJSON(w, layout); err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
 }
 
 // handleLayoutUpdate updates the layout configuration
@@ -503,7 +455,9 @@ func (s *Server) handleLayoutUpdate(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("slug", slug).Int("gridWidth", layout.GridWidth).Int("placements", len(layout.Placements)).Msg("Layout updated")
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Layout updated successfully"})
+	if err := s.renderer.RenderJSON(w, map[string]string{"message": "Layout updated successfully"}); err != nil {
+		log.Error().Err(err).Msg("Failed to render JSON response")
+	}
 }
 
 // handleGenerate triggers static site generation
@@ -518,24 +472,16 @@ func (s *Server) handleGenerate(w http.ResponseWriter, r *http.Request) {
 	// Generate with /preview base URL for local preview (no external image host)
 	if err := s.generator.Generate("/preview", ""); err != nil {
 		log.Error().Err(err).Msg("Site generation failed")
-
-		// Send error toast trigger
-		events := map[string]interface{}{
-			"showMessage": map[string]string{
-				"type":    "error",
-				"message": fmt.Sprintf("Failed to generate site: %v", err),
-			},
-		}
-
-		eventJSON, _ := json.Marshal(events)
-		w.Header().Set("HX-Trigger", string(eventJSON))
-		w.WriteHeader(http.StatusOK) // 200 OK so client processes events
+		rw := NewResponseWriter(w)
+		rw.Error(fmt.Sprintf("Failed to generate site: %v", err))
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	log.Info().Msg("Site generated successfully")
 
 	// Send success toast trigger + enable preview trigger
+	rw := NewResponseWriter(w)
 	events := map[string]interface{}{
 		"showMessage": map[string]string{
 			"type":    "success",
@@ -543,9 +489,7 @@ func (s *Server) handleGenerate(w http.ResponseWriter, r *http.Request) {
 		},
 		"enablePreview": true,
 	}
-
-	eventJSON, _ := json.Marshal(events)
-	w.Header().Set("HX-Trigger", string(eventJSON))
+	rw.Trigger(events)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -571,30 +515,7 @@ func (s *Server) handleConfigView(w http.ResponseWriter, r *http.Request) {
 		"Projects": projects,
 	}
 
-	// If this is not an htmx request (direct navigation), return full page with content
-	if r.Header.Get("HX-Request") == "" {
-		// Create a buffer to render the config editor
-		var buf bytes.Buffer
-		if err := s.templates.ExecuteTemplate(&buf, "config-editor.html", data); err != nil {
-			log.Error().Err(err).Msg("Template execution failed")
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
-
-		// Wrap it in the full page layout
-		pageData := map[string]interface{}{
-			"Content":  template.HTML(buf.String()),
-			"Projects": projects, // Pass projects for sidebar
-		}
-		if err := s.templates.ExecuteTemplate(w, "index.html", pageData); err != nil {
-			log.Error().Err(err).Msg("Template execution failed")
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	if err := s.templates.ExecuteTemplate(w, "config-editor.html", data); err != nil {
-		log.Error().Err(err).Msg("Template execution failed")
+	if err := s.renderer.RenderPartialOrFull(w, r, "config-editor.html", data); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
@@ -670,26 +591,13 @@ func (s *Server) handleConfigUpdate(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.contentMgr.SaveSiteMeta(meta); err != nil {
 		log.Error().Err(err).Msg("Failed to save site config")
-
-		events := map[string]interface{}{
-			"showMessage": map[string]string{
-				"type":    "error",
-				"message": fmt.Sprintf("Failed to update config: %v", err),
-			},
-		}
-		eventJSON, _ := json.Marshal(events)
-		w.Header().Set("HX-Trigger", string(eventJSON))
+		rw := NewResponseWriter(w)
+		rw.Error(fmt.Sprintf("Failed to update config: %v", err))
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	events := map[string]interface{}{
-		"showMessage": map[string]string{
-			"type":    "success",
-			"message": "Configuration updated successfully!",
-		},
-	}
-	eventJSON, _ := json.Marshal(events)
-	w.Header().Set("HX-Trigger", string(eventJSON))
+	rw := NewResponseWriter(w)
+	rw.Success("Configuration updated successfully!")
 	w.WriteHeader(http.StatusOK)
 }
