@@ -1,0 +1,28 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  # Build the CLI binary used for the builder dev server
+  cmd = "go build -o ./bin/builder ./cmd"
+  # Short delay before building after file changes (ms)
+  delay = 300
+  # Entrypoint runs the local builder dev server
+  entrypoint = ["./bin/builder", "builder", "serve"]
+  include_dir = ["cmd", "internal", "assets", "assets/templates", "assets/static", "content"]
+  include_ext = ["go", "html", "css", "yaml", "yml", "json", "toml"]
+  exclude_dir = ["bin", "dist", "tmp"]
+  kill_delay = "1s"
+  # Automatically rebuild & restart on change
+  rerun = true
+  rerun_delay = 500
+  # Allow the process to keep running even if build fails so you can inspect errors
+  stop_on_error = false
+
+[log]
+main_only = false
+silent = false
+time = false
+
+[screen]
+clear_on_rebuild = true
+keep_scroll = true

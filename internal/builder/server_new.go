@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
@@ -59,6 +60,8 @@ func (s *ServerNew) setupRoutes() {
 	s.gin.POST("/projects/:slug/delete", s.handleProjectDelete)
 	s.gin.DELETE("/projects/:slug", s.handleProjectDelete)
 	s.gin.GET("/projects/:slug", s.handleProject)
+	s.gin.GET("/config", s.handleConfig)
+	s.gin.POST("/config", s.handleConfigSave)
 	// Serve embedded assets under /static using the embedded "static" directory as root
 	subFS, err := fs.Sub(assets.StaticFS, "static")
 	if err != nil {
@@ -285,4 +288,171 @@ func (s *ServerNew) handleProjectDelete(c *gin.Context) {
 func ServeNew() {
 	srv := NewServerNew()
 	srv.Serve()
+}
+
+func (s *ServerNew) handleConfig(c *gin.Context) {
+	if s.mgr == nil {
+		zlog.Error().Msg("no content manager configured")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	meta, err := s.mgr.LoadSiteMeta()
+	if err != nil {
+		zlog.Error().Err(err).Msg("failed to load site metadata")
+		// Continue with empty metadata explicitly handled if needed, or error out
+		// LoadSiteMeta returns default if not found, so error is real IO error
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// Helper to render response
+	hx := c.GetHeader("HX-Request")
+	if hx != "" {
+		if err := s.tmpl.ExecuteTemplate(c.Writer, "config", meta); err != nil {
+			zlog.Error().Err(err).Msg("failed to render config partial")
+			c.AbortWithError(http.StatusInternalServerError, err)
+		}
+		return
+	}
+
+	// Full page render
+	// We need a wrapper or use index.html with conditional content?
+	// The current renderFullPage assumes "Content" is injected into main.
+	// But index.html implementation (based on sidebar) seems to expect nothing in main initially?
+	// Wait, let's look at renderFullPage again.
+	// It uses "index.html" or "project.html".
+	// We might need a "config-full.html" or use a generic wrapper.
+	// For now, let's assume we can reuse a layout or create a simple wrapper.
+	// Actually, looking at renderFullPage, it executes a named template.
+	// "index.html" has {{template "sidebar" .}} {{template "main" .}} {{template "toast" .}}
+	// "main" usually comes from the page template itself? No, "main" is defined in main.html presumably?
+	// Let's check main.html.
+
+	// If I use renderFullPage with "config-full.html", I need that file.
+	// Alternatively, I can use a generic layout and inject the "config" template as content.
+	// But `templates` usually define the structure.
+
+	// Let's create a dynamic render or just use "index.html" style but with config injected.
+	// Actually, `handleHome` uses `index.html`.
+	// `handleProject` uses `project.html`.
+	// I should probably have `config-full.html` that extends the base layout and includes `config`.
+
+	// For this step, I'll render "config.html" directly if partial.
+	// For full page, I'll assume I need to create `config_page.html` or similar.
+	// Let's check if I can just pass the config template as the main content.
+	// The `renderFullPage` takes a template name.
+
+	// I will use "configPage" as the template name for full page, and I will define it.
+
+	if err := s.renderFullPage(c.Writer, "config_page.html", meta); err != nil {
+		zlog.Error().Err(err).Msg("failed to render config page")
+		c.AbortWithError(http.StatusInternalServerError, err)
+	}
+}
+
+func (s *ServerNew) handleConfigSave(c *gin.Context) {
+	if s.mgr == nil {
+		zlog.Error().Msg("no content manager configured")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	// Load existing meta to preserve other fields (like Projects)
+	meta, err := s.mgr.LoadSiteMeta()
+	if err != nil {
+		zlog.Error().Err(err).Msg("failed to load existing site metadata")
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// Update fields from form
+	meta.WebsiteName = c.PostForm("website_name")
+	meta.Copyright = c.PostForm("copyright")
+	meta.LogoPrimary = c.PostForm("logo_primary")
+	meta.LogoSecondary = c.PostForm("logo_secondary")
+
+	// Update About
+	if meta.About == nil {
+		meta.About = &content.About{}
+	}
+	meta.About.Title = c.PostForm("about_title")
+	meta.About.Quote = c.PostForm("about_quote")
+	meta.About.QuoteSource = c.PostForm("about_quote_source")
+
+	paragraphsRaw := c.PostForm("about_paragraphs")
+	// Split by double newline to treat each block as a separate paragraph
+	var paragraphs []string
+	// Standardize line endings
+	paragraphsRaw = strings.ReplaceAll(paragraphsRaw, "\r\n", "\n")
+	// Split by double newlines (or more) to get separate paragraphs
+	for _, p := range strings.Split(paragraphsRaw, "\n\n") {
+		// Trim whitespace from each paragraph
+		p = strings.TrimSpace(p)
+		// Skip empty paragraphs
+		if p != "" {
+			paragraphs = append(paragraphs, p)
+		}
+	}
+	meta.About.Paragraphs = paragraphs
+
+	// Update Contact
+	if meta.Contact == nil {
+		meta.Contact = &content.Contact{}
+	}
+	meta.Contact.Email = c.PostForm("contact_email")
+	meta.Contact.Instagram = c.PostForm("contact_instagram")
+	meta.Contact.Website = c.PostForm("contact_website")
+
+	// Update Projects order
+	// Parse all project_slug_N and project_order_N pairs
+	var projectOrders []content.ProjectOrder
+	for i := 0; ; i++ {
+		slugKey := fmt.Sprintf("project_slug_%d", i)
+		orderKey := fmt.Sprintf("project_order_%d", i)
+
+		slug := c.PostForm(slugKey)
+		if slug == "" {
+			break // No more projects
+		}
+
+		orderStr := c.PostForm(orderKey)
+		order := 0
+		if orderStr != "" {
+			fmt.Sscanf(orderStr, "%d", &order)
+		}
+
+		projectOrders = append(projectOrders, content.ProjectOrder{
+			Slug:  slug,
+			Order: order,
+		})
+	}
+	meta.Projects = projectOrders
+
+	// Save
+	if err := s.mgr.SaveSiteMeta(meta); err != nil {
+		zlog.Error().Err(err).Msg("failed to save site metadata")
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// Render response
+	// If HTMX, return only success toast OOB
+	hx := c.GetHeader("HX-Request")
+	if hx != "" {
+		// Toast
+		var toastBuf bytes.Buffer
+		toastData := struct{ Message string }{Message: "Configuration saved"}
+
+		if err := s.tmpl.ExecuteTemplate(&toastBuf, "toastMessage", toastData); err != nil {
+			zlog.Warn().Err(err).Msg("failed to render toastMessage")
+		} else {
+			c.Status(http.StatusOK)
+			c.Writer.Write(toastBuf.Bytes())
+		}
+		return
+	}
+
+	// Full page redirect
+	c.Redirect(http.StatusSeeOther, "/config")
 }

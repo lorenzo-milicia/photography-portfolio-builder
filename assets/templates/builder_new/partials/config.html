@@ -1,0 +1,124 @@
+{{define "config"}}
+<div class="site-config">
+    <h1>Site Configuration</h1>
+
+    <form id="config-form" class="config-form" hx-post="/config" hx-swap="none" hx-indicator=".config-save-indicator">
+        <!-- General Settings -->
+        <div class="config-section">
+            <h2 class="config-section-title">General</h2>
+
+            <div class="config-fields">
+                <div class="config-field">
+                    <label>Website Name</label>
+                    <input type="text" name="website_name" value="{{.WebsiteName}}">
+                </div>
+
+                <div class="config-field">
+                    <label>Copyright</label>
+                    <input type="text" name="copyright" value="{{.Copyright}}">
+                </div>
+
+                <div class="config-field-group">
+                    <div class="config-field">
+                        <label>Primary Logo Text</label>
+                        <input type="text" name="logo_primary" value="{{.LogoPrimary}}">
+                    </div>
+                    <div class="config-field">
+                        <label>Secondary Logo Text</label>
+                        <input type="text" name="logo_secondary" value="{{.LogoSecondary}}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Section -->
+        <div class="config-section">
+            <h2 class="config-section-title">About Page</h2>
+
+            <div class="config-fields">
+                <div class="config-field">
+                    <label>Title</label>
+                    <input type="text" name="about_title" value="{{if .About}}{{.About.Title}}{{end}}">
+                </div>
+
+                <div class="config-field">
+                    <label>Paragraphs (one per line)</label>
+                    <textarea name="about_paragraphs" rows="6">{{if .About}}{{range $idx, $p := .About.Paragraphs}}{{if $idx}}
+
+{{end}}{{$p}}{{end}}{{end}}</textarea>
+                </div>
+
+                <div class="config-field-group">
+                    <div class="config-field">
+                        <label>Quote</label>
+                        <input type="text" name="about_quote" value="{{if .About}}{{.About.Quote}}{{end}}">
+                    </div>
+                    <div class="config-field">
+                        <label>Quote Source</label>
+                        <input type="text" name="about_quote_source" value="{{if .About}}{{.About.QuoteSource}}{{end}}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Configuration -->
+        <div class="config-section">
+            <h2 class="config-section-title">Contact Info</h2>
+
+            <div class="config-fields">
+                <div class="config-field">
+                    <label>Email</label>
+                    <input type="email" name="contact_email" value="{{if .Contact}}{{.Contact.Email}}{{end}}">
+                </div>
+
+                <div class="config-field">
+                    <label>Instagram URL</label>
+                    <input type="text" name="contact_instagram" value="{{if .Contact}}{{.Contact.Instagram}}{{end}}">
+                </div>
+
+                <div class="config-field">
+                    <label>Website URL</label>
+                    <input type="text" name="contact_website" value="{{if .Contact}}{{.Contact.Website}}{{end}}">
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Order -->
+        <div class="config-section">
+            <h2 class="config-section-title">Projects Order</h2>
+            <p class="config-description">Define the order in which projects appear on the site. Lower numbers appear first.</p>
+            
+            <div class="config-fields">
+                {{if .Projects}}
+                    {{range $idx, $proj := .Projects}}
+                    <div class="project-order-item">
+                        <input type="hidden" name="project_slug_{{$idx}}" value="{{$proj.Slug}}">
+                        <div class="project-order-number">
+                            <label>Order</label>
+                            <input type="number" name="project_order_{{$idx}}" value="{{$proj.Order}}" min="0" step="1">
+                        </div>
+                        <div class="project-order-slug">
+                            <label>Project</label>
+                            <input type="text" value="{{$proj.Slug}}" disabled>
+                        </div>
+                    </div>
+                    {{end}}
+                {{else}}
+                    <p class="config-empty">No projects configured yet.</p>
+                {{end}}
+            </div>
+        </div>
+    </form>
+
+    <!-- Submit Action - Outside form to enable fixed positioning -->
+    <div class="config-actions">
+        <button type="submit" form="config-form" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Save Configuration
+        </button>
+        <div class="spinner small config-save-indicator"></div>
+    </div>
+</div>
+{{end}}

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration — Photography Portfolio Builder</title>
+    <link rel="stylesheet" href="/static/builder_new/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="/static/builder_new/builder.js"></script>
+</head>
+
+<body>
+    {{template "sidebar" .}}
+    <main id="main-content">
+        <div id="loading" class="loading main-htmx-indicator main-loading-indicator" aria-hidden="true">
+            <div class="spinner" role="status" aria-label="Loading"></div>
+        </div>
+        <div id="content" class="content main-htmx-indicator main-content-indicator">
+            {{template "config" .Content}}
+        </div>
+    </main>
+    {{template "toast" .}}
+</body>
+
+</html>
