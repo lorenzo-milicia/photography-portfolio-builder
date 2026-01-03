@@ -93,6 +93,15 @@ type ProjectOrder struct {
 	Order int    `yaml:"order"`
 }
 
+// StorageConfig holds storage backend configuration
+type StorageConfig struct {
+	Driver   string `yaml:"driver"`             // "filesystem" or "s3"
+	Endpoint string `yaml:"endpoint,omitempty"` // S3 endpoint (for R2/custom S3)
+	Region   string `yaml:"region,omitempty"`   // S3 region
+	Bucket   string `yaml:"bucket,omitempty"`   // S3 bucket name
+	BaseURL  string `yaml:"base_url,omitempty"` // Public URL for accessing images
+}
+
 type SiteMetadata struct {
 	Copyright     string         `yaml:"copyright"`
 	WebsiteName   string         `yaml:"website_name"`
@@ -101,6 +110,7 @@ type SiteMetadata struct {
 	About         *About         `yaml:"about,omitempty"`
 	Contact       *Contact       `yaml:"contact,omitempty"`
 	Projects      []ProjectOrder `yaml:"projects,omitempty"`
+	Storage       *StorageConfig `yaml:"storage,omitempty"`
 }
 
 // SiteMetaPath returns the path to the site-level metadata YAML file

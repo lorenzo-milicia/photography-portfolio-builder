@@ -27,7 +27,7 @@ type PhotoInfo struct {
 	ThumbPath   string  `json:"thumbPath"`   // path to thumbnail for builder UI
 }
 
-// ListPhotos returns all photos for a project
+// ListPhotos returns all photos for a project by reading from the source photos directory
 func (m *Manager) ListPhotos(slug string) ([]*PhotoInfo, error) {
 	photosDir := m.ProjectPhotosDir(slug)
 
@@ -38,10 +38,6 @@ func (m *Manager) ListPhotos(slug string) ([]*PhotoInfo, error) {
 		}
 		return nil, fmt.Errorf("failed to read photos directory: %w", err)
 	}
-
-	// Ensure thumbs directory exists
-	thumbsDir := filepath.Join(photosDir, ".thumbs")
-	os.MkdirAll(thumbsDir, 0755)
 
 	var photos []*PhotoInfo
 	for _, entry := range entries {
@@ -85,6 +81,74 @@ func (m *Manager) ListPhotos(slug string) ([]*PhotoInfo, error) {
 			Filename:    entry.Name(),
 			HashID:      hashID,
 			Path:        photoPath,
+			Size:        info.Size(),
+			AspectRatio: aspectRatio,
+			RatioWidth:  ratioW,
+			RatioHeight: ratioH,
+			ThumbPath:   thumbURL,
+		}
+		photos = append(photos, photo)
+	}
+
+	return photos, nil
+}
+
+// ListProcessedPhotos returns all processed photos for a project by reading from the processed images directory (dist/images).
+// This is used by the builder UI to display thumbnails that have been processed.
+func (m *Manager) ListProcessedPhotos(slug string, processedDir string) ([]*PhotoInfo, error) {
+	// Read from dist/images/{slug}/.thumbs/ directory
+	thumbsDir := filepath.Join(processedDir, slug, ".thumbs")
+
+	entries, err := os.ReadDir(thumbsDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []*PhotoInfo{}, nil
+		}
+		return nil, fmt.Errorf("failed to read processed thumbs directory: %w", err)
+	}
+
+	var photos []*PhotoInfo
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasPrefix(entry.Name(), "thumb-") {
+			continue
+		}
+
+		// Extract hashID from filename: thumb-{hashID}.webp
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".webp") {
+			continue
+		}
+
+		hashID := strings.TrimPrefix(name, "thumb-")
+		hashID = strings.TrimSuffix(hashID, ".webp")
+
+		if len(hashID) != 12 {
+			continue // Invalid hash ID length
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+
+		// Try to get aspect ratio from the thumbnail itself
+		thumbPath := filepath.Join(thumbsDir, entry.Name())
+		aspectRatio, err := getImageAspectRatio(thumbPath)
+		if err != nil {
+			// Default to square if we can't read the aspect ratio
+			aspectRatio = 1.0
+		}
+
+		// Convert to integer ratio
+		ratioW, ratioH := getIntegerRatio(aspectRatio)
+
+		// Build thumbnail URL - will be updated by server based on imageURLPrefix
+		thumbURL := fmt.Sprintf("/images/%s/.thumbs/%s", slug, entry.Name())
+
+		photo := &PhotoInfo{
+			Filename:    entry.Name(), // Will be updated with original filename if needed
+			HashID:      hashID,
+			Path:        thumbPath,
 			Size:        info.Size(),
 			AspectRatio: aspectRatio,
 			RatioWidth:  ratioW,

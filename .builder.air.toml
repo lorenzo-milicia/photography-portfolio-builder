@@ -7,10 +7,10 @@ tmp_dir = "tmp"
   # Short delay before building after file changes (ms)
   delay = 300
   # Entrypoint runs the local builder dev server
-  entrypoint = ["./bin/builder", "builder", "serve"]
+  entrypoint = ["./bin/builder", "builder", "serve", "--env", ".env"]
   include_dir = ["cmd", "internal", "assets", "assets/templates", "assets/static", "content"]
   include_ext = ["go", "html", "css", "yaml", "yml", "json", "toml"]
-  exclude_dir = ["bin", "dist", "tmp"]
+  exclude_dir = ["bin", "dist", "tmp", "photos"]
   kill_delay = "1s"
   # Automatically rebuild & restart on change
   rerun = true

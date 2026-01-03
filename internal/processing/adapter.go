@@ -3,6 +3,7 @@ package processing
 import (
 	"fmt"
 	"io"
+	"mime/multipart"
 	"os"
 	"path/filepath"
 )
@@ -18,6 +19,19 @@ func (f *FileSource) Open() (io.ReadCloser, error) {
 
 func (f *FileSource) Name() string {
 	return filepath.Base(f.Path)
+}
+
+// MultipartFileSource implements ImageSource for uploaded multipart files
+type MultipartFileSource struct {
+	Header *multipart.FileHeader
+}
+
+func (m *MultipartFileSource) Open() (io.ReadCloser, error) {
+	return m.Header.Open()
+}
+
+func (m *MultipartFileSource) Name() string {
+	return m.Header.Filename
 }
 
 // FileDestination implements ImageDestination for local filesystem

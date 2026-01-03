@@ -140,9 +140,76 @@
   // INITIALIZATION
   // =============================================================================
 
+  // =============================================================================
+  // COLLAPSIBLE SECTIONS
+  // =============================================================================
+
+  const CollapsibleManager = {
+    initialized: false,
+
+    init() {
+      if (this.initialized) return;
+
+      // Set up event delegation for collapse buttons
+      document.addEventListener('click', (e) => {
+        const button = e.target.closest('[data-toggle]');
+        if (button) {
+          const targetId = button.getAttribute('data-toggle');
+          const section = document.querySelector(`[data-section="${targetId}"]`);
+          
+          if (section) {
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+            
+            if (isExpanded) {
+              section.style.display = 'none';
+              button.setAttribute('aria-expanded', 'false');
+            } else {
+              section.style.display = 'block';
+              button.setAttribute('aria-expanded', 'true');
+            }
+          }
+        }
+      });
+
+      this.initialized = true;
+    }
+  };
+
+  // =============================================================================
+  // PHOTO UPLOAD HANDLER
+  // =============================================================================
+
+  const PhotoUploadHandler = {
+    initialized: false,
+
+    init() {
+      if (this.initialized) return;
+
+      // Listen for the photoUploaded trigger from HTMX
+      document.body.addEventListener('photoUploaded', () => {
+        // Reload the page after a short delay to allow the toast to appear
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      });
+
+      this.initialized = true;
+    }
+  };
+
+  // =============================================================================
+  // INITIALIZATION
+  // =============================================================================
+
   function init() {
     // Initialize toast manager
     ToastManager.init();
+    
+    // Initialize collapsible sections
+    CollapsibleManager.init();
+    
+    // Initialize photo upload handler
+    PhotoUploadHandler.init();
   }
 
   // Initialize when DOM is ready

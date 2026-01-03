@@ -429,6 +429,17 @@ body {
   margin: 0 0 var(--spacing-lg) 0;
 }
 
+.project-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-xl);
+}
+
+.project-header h2 {
+  margin: 0;
+}
+
 .project-config p {
   margin: var(--spacing-md) 0;
   line-height: 1.6;
@@ -447,6 +458,174 @@ body {
 
 .project-actions form {
   display: inline;
+}
+
+.config-actions-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.field-hint {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-xs);
+}
+
+/* Project save indicator */
+.project-save-indicator {
+  display: none !important;
+}
+
+.project-save-indicator[htmx-request],
+.project-save-indicator[hx-request],
+.project-save-indicator.main-htmx-request,
+.project-save-indicator.htmx-request {
+  display: inline-block !important;
+}
+
+/* Photos Section */
+.photos-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.photos-header .config-section-title {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.btn-collapse {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-collapse:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-secondary);
+}
+
+.btn-collapse svg {
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.btn-collapse[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.photos-count {
+  font-weight: var(--font-weight-medium);
+}
+
+.photos-section {
+  margin-top: var(--spacing-md);
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: var(--spacing-md);
+}
+
+.photo-item {
+  position: relative;
+  aspect-ratio: 1;
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.photo-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.photo-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-delete-btn {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  z-index: 10;
+  padding: var(--spacing-xs);
+  background: rgba(239, 68, 68, 0.9);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: white;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-item:hover .photo-delete-btn {
+  opacity: 1;
+}
+
+.photo-delete-btn:hover {
+  background: rgba(220, 38, 38, 1);
+}
+
+.photo-delete-btn:active {
+  transform: scale(0.95);
+}
+
+.photo-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  color: white;
+  font-size: var(--font-size-xs);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.photo-item:hover .photo-info {
+  opacity: 1;
+}
+
+.photo-name {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: var(--font-weight-medium);
+}
+
+.photo-ratio {
+  display: block;
+  font-size: 0.7rem;
+  opacity: 0.8;
 }
 
 /* Toast Messages */
@@ -708,5 +887,95 @@ body {
 .config-save-indicator[hx-request],
 .config-save-indicator.main-htmx-request,
 .config-save-indicator.htmx-request {
+  display: inline-block !important;
+}
+
+/* Upload Section */
+.upload-section {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-secondary);
+}
+
+.upload-section h4 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.upload-field {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.upload-field input[type="file"] {
+  flex: 1;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.upload-field input[type="file"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Upload button loading states */
+.upload-btn {
+  min-width: 120px; /* Fixed width to prevent resize */
+}
+
+.upload-btn .btn-content,
+.upload-btn .btn-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.upload-btn .btn-loading {
+  display: none;
+}
+
+.upload-btn.htmx-request .btn-content {
+  display: none;
+}
+
+.upload-btn.htmx-request .btn-loading {
+  display: inline-flex;
+}
+
+.upload-btn.htmx-request {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.upload-btn .spinner-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.upload-indicator {
+  display: none !important;
+}
+
+.upload-indicator[htmx-request],
+.upload-indicator[hx-request],
+.upload-indicator.main-htmx-request,
+.upload-indicator.htmx-request {
   display: inline-block !important;
 }
